@@ -1,5 +1,6 @@
+import Layout from '../components/Layout'
 import { useEffect, useState } from 'react'
-import { supabase } from '@/utils/supabase' // حسب مكان ملفك
+import supabase from '../utils/supabaseClient'
 
 export default function TestPage() {
   const [cars, setCars] = useState<any[]>([])
