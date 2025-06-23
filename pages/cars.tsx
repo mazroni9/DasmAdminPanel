@@ -1,6 +1,6 @@
 import Layout from '../components/Layout'
 import { useEffect, useState } from 'react'
-import { supabase } from '../utils/supabaseClient'
+import supabase from '../utils/supabaseClient'
 
 export default function Cars() {
   const [cars, setCars] = useState<any[]>([])
