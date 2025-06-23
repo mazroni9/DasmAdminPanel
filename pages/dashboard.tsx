@@ -1,38 +1,97 @@
 import Layout from '../components/Layout'
 import { useEffect, useState } from 'react'
-import { supabase } from '../utils/supabaseClient'
+import supabase from '../utils/supabaseClient'
+
+interface DashboardStats {
+  cars: number
+  users: number
+  wallets: number
+}
 
 export default function Dashboard() {
-  const [stats, setStats] = useState({ cars: 0, users: 0, wallets: 0 })
+  const [stats, setStats] = useState<DashboardStats>({ cars: 0, users: 0, wallets: 0 })
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const fetchStats = async () => {
-      const [{ count: cars = 0 }, { count: users = 0 }, { count: wallets = 0 }] = await Promise.all([
-        supabase.from('cars').select('*', { count: 'exact', head: true }),
-        supabase.from('users').select('*', { count: 'exact', head: true }),
-        supabase.from('wallets').select('*', { count: 'exact', head: true })
-      ])
-      setStats({ cars, users, wallets })
+      try {
+        const [carsResult, usersResult, walletsResult] = await Promise.all([
+          supabase.from('cars').select('*', { count: 'exact', head: true }),
+          supabase.from('users').select('*', { count: 'exact', head: true }),
+          supabase.from('wallets').select('*', { count: 'exact', head: true })
+        ])
+
+        setStats({
+          cars: carsResult.count || 0,
+          users: usersResult.count || 0,
+          wallets: walletsResult.count || 0
+        })
+      } catch (error) {
+        console.error('Error fetching stats:', error)
+      } finally {
+        setLoading(false)
+      }
     }
 
     fetchStats()
   }, [])
 
   return (
-    <Layout>
-      <h1 className="text-2xl font-bold mb-4">Dashboard</h1>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white p-4 rounded shadow">
-          <h2 className="text-lg font-semibold">Total Cars</h2>
-          <p className="text-2xl">{stats.cars}</p>
-        </div>
-        <div className="bg-white p-4 rounded shadow">
-          <h2 className="text-lg font-semibold">Total Users</h2>
-          <p className="text-2xl">{stats.users}</p>
-        </div>
-        <div className="bg-white p-4 rounded shadow">
-          <h2 className="text-lg font-semibold">Total Wallets</h2>
-          <p className="text-2xl">{stats.wallets}</p>
+    <Layout title="لوحة التحكم">
+      <div className="space-y-6">
+        <h1 className="text-2xl font-bold text-gray-900 mb-8">نظرة عامة</h1>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* إحصائيات السيارات */}
+          <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg shadow-lg p-6 text-white">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-blue-100 text-sm font-medium">إجمالي السيارات</p>
+                <p className="mt-2 text-4xl font-semibold">
+                  {loading ? '...' : stats.cars}
+                </p>
+              </div>
+              <div className="bg-blue-400 bg-opacity-30 rounded-full p-3">
+                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          {/* إحصائيات المستخدمين */}
+          <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-lg shadow-lg p-6 text-white">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-green-100 text-sm font-medium">إجمالي المستخدمين</p>
+                <p className="mt-2 text-4xl font-semibold">
+                  {loading ? '...' : stats.users}
+                </p>
+              </div>
+              <div className="bg-green-400 bg-opacity-30 rounded-full p-3">
+                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          {/* إحصائيات المحافظ */}
+          <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg shadow-lg p-6 text-white">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-purple-100 text-sm font-medium">إجمالي المحافظ</p>
+                <p className="mt-2 text-4xl font-semibold">
+                  {loading ? '...' : stats.wallets}
+                </p>
+              </div>
+              <div className="bg-purple-400 bg-opacity-30 rounded-full p-3">
+                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </Layout>
