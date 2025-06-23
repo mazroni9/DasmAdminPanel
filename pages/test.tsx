@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { supabase } from '@/lib/supabase' // حسب مكان ملفك
+import { supabase } from '@/utils/supabase' // حسب مكان ملفك
 
 export default function TestPage() {
   const [cars, setCars] = useState<any[]>([])

@@ -1,6 +1,6 @@
 import Layout from '../components/Layout'
 import { useEffect, useState } from 'react'
-import supabase from '../lib/supabase'
+import supabase from '../utils/supabaseClient'
 
 export default function Wallets() {
   const [wallets, setWallets] = useState<any[]>([])
