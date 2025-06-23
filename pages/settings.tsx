@@ -1,6 +1,7 @@
 import Layout from '../components/Layout'
 import { useState } from 'react'
 import supabase from '../utils/supabaseClient'
+import { ArrowPathIcon, PauseIcon, ChartBarIcon } from '@heroicons/react/24/outline'
 
 interface SystemSettings {
   // إعدادات النظام الأساسية
@@ -76,6 +77,11 @@ interface SystemSettings {
     errorReporting: boolean
     performanceMonitoring: boolean
   }
+}
+
+interface ProjectSettings {
+  projectName: string;
+  projectId: string;
 }
 
 export default function Settings() {
@@ -519,6 +525,30 @@ export default function Settings() {
     }
   }
 
+  const [projectSettings, setProjectSettings] = useState<ProjectSettings>({
+    projectName: 'alb-maz',
+    projectId: 'uhdopxhxmrxwystnbmmp'
+  })
+
+  const handleSave = async () => {
+    // سيتم إضافة منطق حفظ الإعدادات لاحقاً
+    console.log('Saving settings:', settings)
+  }
+
+  const handleCopyProjectId = () => {
+    navigator.clipboard.writeText(projectSettings.projectId)
+  }
+
+  const handleRestartProject = () => {
+    // سيتم إضافة منطق إعادة تشغيل المشروع لاحقاً
+    console.log('Restarting project...')
+  }
+
+  const handlePauseProject = () => {
+    // سيتم إضافة منطق إيقاف المشروع لاحقاً
+    console.log('Pausing project...')
+  }
+
   return (
     <Layout title="إعدادات النظام">
       <div className="space-y-6">
@@ -618,6 +648,135 @@ export default function Settings() {
             >
               إنشاء نسخة احتياطية
             </button>
+          </div>
+        </div>
+
+        <div className="min-h-screen bg-gray-50/50 p-4 sm:p-6 lg:p-8">
+          <div className="max-w-4xl mx-auto">
+            <h1 className="text-2xl font-semibold text-gray-900 mb-8">إعدادات المشروع</h1>
+
+            {/* الإعدادات العامة */}
+            <div className="bg-white shadow-sm rounded-lg mb-6">
+              <div className="p-6">
+                <h2 className="text-lg font-medium text-gray-900 mb-6">الإعدادات العامة</h2>
+                
+                <div className="space-y-6">
+                  {/* اسم المشروع */}
+                  <div>
+                    <label htmlFor="projectName" className="block text-sm font-medium text-gray-700 mb-2">
+                      اسم المشروع
+                    </label>
+                    <input
+                      type="text"
+                      id="projectName"
+                      value={projectSettings.projectName}
+                      onChange={(e) => setProjectSettings({ ...projectSettings, projectName: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+
+                  {/* معرف المشروع */}
+                  <div>
+                    <label htmlFor="projectId" className="block text-sm font-medium text-gray-700 mb-2">
+                      معرف المشروع
+                    </label>
+                    <div className="flex">
+                      <input
+                        type="text"
+                        id="projectId"
+                        value={projectSettings.projectId}
+                        readOnly
+                        className="flex-1 px-4 py-2 border border-gray-300 rounded-r-md bg-gray-50"
+                      />
+                      <button
+                        onClick={handleCopyProjectId}
+                        className="px-4 py-2 bg-gray-100 border border-r-0 border-gray-300 rounded-l-md hover:bg-gray-200"
+                      >
+                        نسخ
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-6 flex justify-end space-x-3">
+                  <button
+                    type="button"
+                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                  >
+                    إلغاء
+                  </button>
+                  <button
+                    onClick={handleSave}
+                    className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
+                  >
+                    حفظ
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* إعادة تشغيل المشروع */}
+            <div className="bg-white shadow-sm rounded-lg mb-6">
+              <div className="p-6">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h3 className="text-lg font-medium text-gray-900">إعادة تشغيل المشروع</h3>
+                    <p className="mt-1 text-sm text-gray-500">
+                      لن يكون مشروعك متاحاً لبضع دقائق.
+                    </p>
+                  </div>
+                  <button
+                    onClick={handleRestartProject}
+                    className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                  >
+                    <ArrowPathIcon className="h-5 w-5 ml-2" />
+                    إعادة تشغيل المشروع
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* إيقاف المشروع */}
+            <div className="bg-white shadow-sm rounded-lg mb-6">
+              <div className="p-6">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h3 className="text-lg font-medium text-gray-900">إيقاف المشروع</h3>
+                    <p className="mt-1 text-sm text-gray-500">
+                      لن يكون مشروعك متاحاً أثناء إيقافه.
+                    </p>
+                  </div>
+                  <button
+                    onClick={handlePauseProject}
+                    className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                  >
+                    <PauseIcon className="h-5 w-5 ml-2" />
+                    إيقاف المشروع
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* إحصائيات المشروع */}
+            <div className="bg-white shadow-sm rounded-lg">
+              <div className="p-6">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h3 className="text-lg font-medium text-gray-900">إحصائيات استخدام المشروع</h3>
+                    <p className="mt-1 text-sm text-gray-500">
+                      يمكنك عرض إحصائيات المشروع ضمن إعدادات المؤسسة
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => window.open('/project-usage', '_blank')}
+                    className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                  >
+                    <ChartBarIcon className="h-5 w-5 ml-2" />
+                    عرض إحصائيات المشروع
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>

@@ -1,9 +1,19 @@
 import Head from 'next/head'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
+import { HomeIcon, CarIcon, UsersIcon, VideoCameraIcon, CogIcon, CurrencyDollarIcon } from '@heroicons/react/24/outline'
 
 export default function Layout({ title, children }: any) {
   const router = useRouter()
+
+  const navigation = [
+    { name: 'الرئيسية', href: '/dashboard', icon: HomeIcon },
+    { name: 'السيارات', href: '/cars', icon: CarIcon },
+    { name: 'المستخدمين', href: '/users', icon: UsersIcon },
+    { name: 'إدارة البث', href: '/live-stream', icon: VideoCameraIcon },
+    { name: 'المزادات', href: '/auctions', icon: CurrencyDollarIcon },
+    { name: 'الإعدادات', href: '/settings', icon: CogIcon },
+  ];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 font-sans" dir="rtl">
