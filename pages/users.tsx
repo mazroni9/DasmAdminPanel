@@ -1,11 +1,16 @@
 import Layout from '../components/Layout'
 import { useEffect, useState } from 'react'
 import supabase from '../utils/supabaseClient'
-import { User as SupabaseUser } from '@supabase/supabase-js'
 
-interface User extends Omit<SupabaseUser, 'role'> {
-  role?: string
-  is_active?: boolean
+interface User {
+  id: string
+  email: string
+  created_at: string
+  role: string
+  is_active: boolean
+  full_name?: string
+  phone?: string
+  last_sign_in?: string
 }
 
 export default function Users() {
@@ -22,28 +27,24 @@ export default function Users() {
       setLoading(true)
       setError(null)
 
-      // جلب المستخدمين من جدول auth.users
-      const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers()
-      
-      if (authError) throw authError
-
-      // جلب الأدوار والمعلومات الإضافية من جدول user_profiles إذا كان موجوداً
-      const { data: profiles, error: profilesError } = await supabase
+      // جلب المستخدمين من جدول user_profiles
+      const { data, error: fetchError } = await supabase
         .from('user_profiles')
-        .select('*')
+        .select(`
+          id,
+          email,
+          created_at,
+          role,
+          is_active,
+          full_name,
+          phone,
+          last_sign_in
+        `)
+        .order('created_at', { ascending: false })
 
-      if (profilesError) {
-        console.warn('خطأ في جلب الملفات الشخصية:', profilesError.message)
-      }
+      if (fetchError) throw fetchError
 
-      // دمج بيانات المستخدمين مع ملفاتهم الشخصية
-      const enrichedUsers = authUsers.users.map(user => ({
-        ...user,
-        role: profiles?.find(p => p.user_id === user.id)?.role || 'مستخدم',
-        is_active: Boolean(user.email_confirmed_at) && !user.banned_until
-      }))
-
-      setUsers(enrichedUsers)
+      setUsers(data || [])
     } catch (err) {
       console.error('Error fetching users:', err)
       setError(err instanceof Error ? err.message : 'حدث خطأ في جلب المستخدمين')
@@ -56,15 +57,28 @@ export default function Users() {
     try {
       switch (action) {
         case 'activate':
-          await supabase.auth.admin.updateUserById(userId, { user_metadata: { status: 'active' } })
-          break
         case 'deactivate':
-          await supabase.auth.admin.updateUserById(userId, { user_metadata: { status: 'inactive' } })
+          const { error: updateError } = await supabase
+            .from('user_profiles')
+            .update({ 
+              is_active: action === 'activate',
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', userId)
+          
+          if (updateError) throw updateError
           break
+
         case 'delete':
-          await supabase.auth.admin.deleteUser(userId)
+          const { error: deleteError } = await supabase
+            .from('user_profiles')
+            .delete()
+            .eq('id', userId)
+          
+          if (deleteError) throw deleteError
           break
       }
+
       await fetchUsers() // إعادة تحميل القائمة
     } catch (err) {
       console.error(`Error ${action} user:`, err)
@@ -85,8 +99,9 @@ export default function Users() {
   if (error) {
     return (
       <Layout>
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-          {error}
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded relative" role="alert">
+          <strong className="font-bold ml-2">خطأ!</strong>
+          <span className="block sm:inline">{error}</span>
         </div>
       </Layout>
     )
@@ -115,15 +130,15 @@ export default function Users() {
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center space-x-3 space-x-reverse">
                     <div className="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center">
-                      {user.user_metadata?.name ? (
-                        user.user_metadata.name.charAt(0).toUpperCase()
+                      {user.full_name ? (
+                        user.full_name.charAt(0).toUpperCase()
                       ) : (
                         user.email.charAt(0).toUpperCase()
                       )}
                     </div>
                     <div>
                       <h2 className="text-lg font-semibold">
-                        {user.user_metadata?.name || 'مستخدم جديد'}
+                        {user.full_name || 'مستخدم جديد'}
                       </h2>
                       <p className="text-sm text-gray-500">{user.email}</p>
                     </div>
@@ -143,14 +158,19 @@ export default function Users() {
                   <p>
                     <span className="font-medium">الدور:</span> {user.role}
                   </p>
+                  {user.phone && (
+                    <p>
+                      <span className="font-medium">الهاتف:</span> {user.phone}
+                    </p>
+                  )}
                   <p>
                     <span className="font-medium">تاريخ التسجيل:</span>{' '}
                     {new Date(user.created_at).toLocaleDateString('ar-SA')}
                   </p>
-                  {user.last_sign_in_at && (
+                  {user.last_sign_in && (
                     <p>
                       <span className="font-medium">آخر تسجيل دخول:</span>{' '}
-                      {new Date(user.last_sign_in_at).toLocaleDateString('ar-SA')}
+                      {new Date(user.last_sign_in).toLocaleDateString('ar-SA')}
                     </p>
                   )}
                 </div>
