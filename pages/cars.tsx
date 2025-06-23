@@ -2,8 +2,15 @@ import Layout from '../components/Layout'
 import { useEffect, useState } from 'react'
 import supabase from '../utils/supabaseClient'
 
+interface Car {
+  id: number
+  model: string
+  color: string
+  price: number
+}
+
 export default function Cars() {
-  const [cars, setCars] = useState<any[]>([])
+  const [cars, setCars] = useState<Car[]>([])
 
   useEffect(() => {
     async function fetchCars() {
