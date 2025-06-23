@@ -1,7 +1,7 @@
 import Head from 'next/head'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { HomeIcon, CarIcon, UsersIcon, VideoCameraIcon, CogIcon, CurrencyDollarIcon } from '@heroicons/react/24/outline'
+import { HomeIcon, CarIcon, UsersIcon, VideoCameraIcon, CogIcon, CurrencyDollarIcon, ChartBarIcon } from '@heroicons/react/24/outline'
 
 export default function Layout({ title, children }: any) {
   const router = useRouter()
@@ -12,6 +12,8 @@ export default function Layout({ title, children }: any) {
     { name: 'المستخدمين', href: '/users', icon: UsersIcon },
     { name: 'إدارة البث', href: '/live-stream', icon: VideoCameraIcon },
     { name: 'المزادات', href: '/auctions', icon: CurrencyDollarIcon },
+    { name: 'قنوات YouTube', href: '/youtube-channels', icon: VideoCameraIcon },
+    { name: 'التقارير', href: '/reports', icon: ChartBarIcon },
     { name: 'الإعدادات', href: '/settings', icon: CogIcon },
   ];
 
