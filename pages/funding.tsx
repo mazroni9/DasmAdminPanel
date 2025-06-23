@@ -1,6 +1,6 @@
 import Layout from '../components/Layout'
 import { useEffect, useState } from 'react'
-import supabase from '../utils/supabase'
+import supabase from '../utils/supabaseClient'
 
 export default function Funding() {
   const [requests, setRequests] = useState<any[]>([])
