@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import Layout from '../components/Layout';
-import { ChartBarIcon, DocumentDownloadIcon } from '@heroicons/react/24/outline';
+import { ChartBarIcon, ArrowDownTrayIcon } from '@heroicons/react/24/outline';
 
 interface ReportFilter {
   startDate: string;
@@ -41,6 +41,7 @@ export default function Reports() {
                   value={filter.startDate}
                   onChange={(e) => setFilter({ ...filter, startDate: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  aria-label="تاريخ البداية"
                 />
               </div>
               
@@ -53,6 +54,7 @@ export default function Reports() {
                   value={filter.endDate}
                   onChange={(e) => setFilter({ ...filter, endDate: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  aria-label="تاريخ النهاية"
                 />
               </div>
               
@@ -64,6 +66,7 @@ export default function Reports() {
                   value={filter.type}
                   onChange={(e) => setFilter({ ...filter, type: e.target.value as ReportFilter['type'] })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  aria-label="نوع التقرير"
                 >
                   <option value="all">جميع التقارير</option>
                   <option value="users">تقرير المستخدمين</option>
@@ -78,7 +81,7 @@ export default function Reports() {
                 onClick={handleGenerateReport}
                 className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
               >
-                <DocumentDownloadIcon className="h-5 w-5 ml-2" />
+                <ArrowDownTrayIcon className="h-5 w-5 ml-2" />
                 توليد التقرير
               </button>
             </div>

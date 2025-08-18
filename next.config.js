@@ -7,9 +7,6 @@ const nextConfig = {
     locales: ['ar'],
     defaultLocale: 'ar',
     localeDetection: false
-  },
-  experimental: {
-    optimizeFonts: true
   }
 }
 

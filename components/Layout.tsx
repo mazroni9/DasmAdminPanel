@@ -8,7 +8,13 @@ import {
   Cog6ToothIcon, 
   CurrencyDollarIcon, 
   ChartBarIcon,
-  TruckIcon
+  TruckIcon,
+  BuildingStorefrontIcon,
+  UserPlusIcon,
+  WrenchScrewdriverIcon,
+  ShieldCheckIcon,
+  MegaphoneIcon,
+  BellIcon
 } from '@heroicons/react/24/outline'
 
 export default function Layout({ title, children }: any) {
@@ -16,8 +22,16 @@ export default function Layout({ title, children }: any) {
 
   const navigation = [
     { name: 'الرئيسية', href: '/dashboard', icon: HomeIcon },
+    { name: 'المتاجر الإلكترونية', href: '/showroom-dashboard', icon: BuildingStorefrontIcon },
+    { name: 'فلو شارت النظام', href: '/mermaid-flowchart', icon: ChartBarIcon },
     { name: 'السيارات', href: '/cars', icon: TruckIcon },
+    { name: 'إدارة السيارات', href: '/car-management', icon: WrenchScrewdriverIcon },
     { name: 'المستخدمين', href: '/users', icon: UserGroupIcon },
+    { name: 'إدارة الموظفين', href: '/employees', icon: UserPlusIcon },
+    { name: 'تأمين بلس', href: '/insurance-plus', icon: ShieldCheckIcon },
+    { name: 'Buyer-to-Seller Broadcast', href: '/broadcast', icon: MegaphoneIcon },
+    { name: 'Seller-to-Buyer Broadcast', href: '/seller-broadcast', icon: MegaphoneIcon },
+    { name: 'عروض مخصصة', href: '/buyer-notifications', icon: BellIcon },
     { name: 'إدارة البث', href: '/live-stream', icon: VideoCameraIcon },
     { name: 'المزادات', href: '/auctions', icon: CurrencyDollarIcon },
     { name: 'قنوات YouTube', href: '/youtube-channels', icon: VideoCameraIcon },
