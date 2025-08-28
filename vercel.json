@@ -22,14 +22,6 @@
     "autoJobCancelation": true
   },
   "regions": ["dxb1"],
-  "functions": {
-    "pages/api/**/*.ts": {
-      "maxDuration": 30
-    },
-    "pages/api/**/*.js": {
-      "maxDuration": 30
-    }
-  },
   "headers": [
     {
       "source": "/(.*)",
@@ -58,6 +50,5 @@
   "buildCommand": "npm run build",
   "outputDirectory": ".next",
   "installCommand": "npm install",
-  "framework": "nextjs",
-  "comment": "تم تحديث الإعدادات لحل مشاكل البناء"
+  "framework": "nextjs"
 } 
