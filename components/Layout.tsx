@@ -23,7 +23,6 @@ export default function Layout({ title, children }: any) {
   const navigation = [
     { name: 'الرئيسية', href: '/dashboard', icon: HomeIcon },
     { name: 'المتاجر الإلكترونية', href: '/showroom-dashboard', icon: BuildingStorefrontIcon },
-    { name: 'فلو شارت النظام', href: '/mermaid-flowchart', icon: ChartBarIcon },
     { name: 'السيارات', href: '/cars', icon: TruckIcon },
     { name: 'إدارة السيارات', href: '/car-management', icon: WrenchScrewdriverIcon },
     { name: 'المستخدمين', href: '/users', icon: UserGroupIcon },
