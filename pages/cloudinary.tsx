@@ -1,10 +1,14 @@
-
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import axios from 'axios';
 
+interface CloudinaryImage {
+  public_id: string;
+  secure_url: string;
+}
+
 export default function CloudinaryGallery() {
-  const [images, setImages] = useState([]);
+  const [images, setImages] = useState<CloudinaryImage[]>([]);
 
   useEffect(() => {
     async function fetchImages() {
@@ -34,4 +38,4 @@ export default function CloudinaryGallery() {
       </div>
     </div>
   );
-}
+} 
