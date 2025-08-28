@@ -51,5 +51,7 @@
       "source": "/api/(.*)",
       "destination": "/api/$1"
     }
-  ]
+  ],
+  "buildCommand": "npm run build",
+  "outputDirectory": ".next"
 } 
