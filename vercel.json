@@ -55,5 +55,6 @@
   "buildCommand": "npm run build",
   "outputDirectory": ".next",
   "installCommand": "npm install",
-  "framework": "nextjs"
+  "framework": "nextjs",
+  "comment": "تم تحديث الإعدادات لحل مشاكل البناء"
 } 
