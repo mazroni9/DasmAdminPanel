@@ -1,7 +1,7 @@
 import { useRouter } from 'next/router';
 import { useMemo, useState } from 'react';
 import { apiFetch } from '../utils/api';
-import { setSession } from '../utils/authStorage';
+import { clearSession, setSession } from '../utils/authStorage';
 
 type LoginResponse = {
   access_token: string;
@@ -37,16 +37,17 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
+      // علشان لو فيه توكن قديم متخزن مايتبعتش في طلب الـ login
+      clearSession();
+
       const data = await apiFetch<LoginResponse>('/login', {
         method: 'POST',
-        auth: false,
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email: email.trim(), password }),
       });
 
       const userType = (data?.user?.type || '').toLowerCase();
       if (userType !== 'super_admin') {
         setErrorMsg('لا تمتلك صلاحية الدخول.');
-        setLoading(false);
         return;
       }
 
@@ -58,8 +59,11 @@ export default function LoginPage() {
       });
 
       router.replace(nextPath);
-    } catch (err: any) {
-      setErrorMsg(err?.message || 'تعذر تسجيل الدخول. تحقق من البيانات.');
+    } catch (err: unknown) {
+      const msg =
+        err instanceof Error ? err.message : 'تعذر تسجيل الدخول. تحقق من البيانات.';
+      setErrorMsg(msg);
+    } finally {
       setLoading(false);
     }
   };
@@ -109,7 +113,9 @@ export default function LoginPage() {
 
               <form onSubmit={handleLogin} className="mt-6 space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-white/80 mb-2">الإيميل</label>
+                  <label className="block text-sm font-medium text-white/80 mb-2">
+                    الإيميل
+                  </label>
                   <input
                     type="email"
                     value={email}
@@ -122,7 +128,9 @@ export default function LoginPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-white/80 mb-2">كلمة المرور</label>
+                  <label className="block text-sm font-medium text-white/80 mb-2">
+                    كلمة المرور
+                  </label>
                   <input
                     type="password"
                     value={password}
