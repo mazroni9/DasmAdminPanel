@@ -1,5 +1,5 @@
 import Layout from '../components/Layout';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/router';
 import { apiFetch } from '../utils/api';
 import { getToken } from '../utils/authStorage';
@@ -10,9 +10,9 @@ import {
   MagnifyingGlassIcon,
   ArrowPathIcon,
   PencilSquareIcon,
-  TrashIcon,
   CheckBadgeIcon,
   PowerIcon,
+  XMarkIcon,
 } from '@heroicons/react/24/outline';
 
 type ApiUsersMeta = {
@@ -27,17 +27,20 @@ type ApiUsersResponse = {
   ok?: boolean;
   status?: string;
   data?: ApiUsersMeta | any;
+  message?: string;
 };
 
 type UserRow = {
   id: number;
   first_name?: string;
   last_name?: string;
+  name?: string; // legacy
   email: string;
   phone?: string;
   type?: string;
   kyc_status?: 'pending' | 'verified' | 'rejected' | string;
   is_active?: boolean;
+  active?: boolean;
   status?: string;
   created_at?: string;
   updated_at?: string;
@@ -69,11 +72,14 @@ function fmtDate(v?: string | null) {
 
 function displayName(u: UserRow) {
   const n = `${u.first_name ?? ''} ${u.last_name ?? ''}`.trim();
-  return n || '—';
+  if (n) return n;
+  if (u.name) return u.name;
+  return '—';
 }
 
 function isActive(u: UserRow) {
   if (typeof u.is_active === 'boolean') return u.is_active;
+  if (typeof u.active === 'boolean') return u.active;
   return (u.status ?? '').toLowerCase() === 'active';
 }
 
@@ -95,9 +101,12 @@ function badgeStatus(u: UserRow) {
 function badgeKyc(kyc?: string) {
   const s = (kyc ?? '').toLowerCase();
   const base = 'inline-flex items-center rounded-xl border px-2 py-1 text-xs font-extrabold';
-  if (s === 'verified') return <span className={`${base} bg-emerald-50 text-emerald-700 border-emerald-200`}>verified</span>;
-  if (s === 'rejected') return <span className={`${base} bg-red-50 text-red-700 border-red-200`}>rejected</span>;
-  if (s === 'pending') return <span className={`${base} bg-amber-50 text-amber-700 border-amber-200`}>pending</span>;
+  if (s === 'verified')
+    return <span className={`${base} bg-emerald-50 text-emerald-700 border-emerald-200`}>verified</span>;
+  if (s === 'rejected')
+    return <span className={`${base} bg-red-50 text-red-700 border-red-200`}>rejected</span>;
+  if (s === 'pending')
+    return <span className={`${base} bg-amber-50 text-amber-700 border-amber-200`}>pending</span>;
   return <span className={`${base} bg-gray-100 text-gray-700 border-gray-200`}>{kyc ?? '—'}</span>;
 }
 
@@ -111,6 +120,7 @@ export default function Users() {
 
   const [q, setQ] = useState('');
   const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(20);
 
   // modal
   const [open, setOpen] = useState(false);
@@ -123,12 +133,22 @@ export default function Users() {
   const [phone, setPhone] = useState('');
   const [type, setType] = useState('');
 
-  const loadUsers = async (p = 1) => {
+  const searchTimer = useRef<number | null>(null);
+
+  const lastPage = meta?.last_page ?? 1;
+
+  const loadUsers = async (p = 1, query = q, pp = perPage) => {
     setLoading(true);
     setErr('');
     try {
-      // ✅ NEW: admin-panel endpoint
-      const res = await apiFetch<ApiUsersResponse>(`/admin-panel/users?page=${p}`, { method: 'GET' });
+      const qs = new URLSearchParams();
+      qs.set('page', String(p));
+      qs.set('per_page', String(pp));
+      if (query.trim()) qs.set('q', query.trim());
+
+      // ✅ AdminPanel endpoint
+      const res = await apiFetch<ApiUsersResponse>(`/admin-panel/users?${qs.toString()}`, { method: 'GET' });
+
       setUsers(extractUsers(res));
       setMeta(pickMeta(res));
       setPage(p);
@@ -147,26 +167,47 @@ export default function Users() {
       router.replace('/login');
       return;
     }
-    loadUsers(1);
+    loadUsers(1, '', perPage);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const filtered = useMemo(() => {
-    const s = q.trim().toLowerCase();
-    if (!s) return users;
-    return users.filter((u) => {
-      const full = `${u.first_name ?? ''} ${u.last_name ?? ''}`.toLowerCase();
-      const em = (u.email ?? '').toLowerCase();
-      const tp = (u.type ?? '').toLowerCase();
-      const id = String(u.id ?? '').toLowerCase();
-      const ph = String(u.phone ?? '').toLowerCase();
-      return full.includes(s) || em.includes(s) || tp.includes(s) || id.includes(s) || ph.includes(s);
-    });
-  }, [users, q]);
+  // Debounced server-side search
+  useEffect(() => {
+    if (searchTimer.current) window.clearTimeout(searchTimer.current);
+    searchTimer.current = window.setTimeout(() => {
+      loadUsers(1, q, perPage);
+    }, 450);
+
+    return () => {
+      if (searchTimer.current) window.clearTimeout(searchTimer.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [q]);
+
+  // Lock scroll when modal open + Esc to close
+  useEffect(() => {
+    if (!open) return;
+
+    const prevBody = document.body.style.overflow;
+    const prevHtml = document.documentElement.style.overflow;
+    document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
+
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') closeModal();
+    };
+    window.addEventListener('keydown', onKey);
+
+    return () => {
+      document.body.style.overflow = prevBody;
+      document.documentElement.style.overflow = prevHtml;
+      window.removeEventListener('keydown', onKey);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   const stats = useMemo(() => {
     const total = meta?.total ?? users.length;
-
     const activeCount = users.filter((u) => isActive(u)).length;
 
     const now = new Date();
@@ -187,11 +228,15 @@ export default function Users() {
     return { total, activeCount, activeToday, newThisWeek };
   }, [users, meta]);
 
-  const lastPage = meta?.last_page ?? 1;
+  // ========= Helpers =========
 
-  // ========= Actions =========
+  const closeModal = () => {
+    setOpen(false);
+    setEditing(null);
+  };
 
-  const openEdit = (u: UserRow) => {
+  const openEdit = async (u: UserRow) => {
+    // open fast with row data
     setEditing(u);
     setFirstName(u.first_name ?? '');
     setLastName(u.last_name ?? '');
@@ -199,32 +244,85 @@ export default function Users() {
     setPhone(u.phone ?? '');
     setType(u.type ?? '');
     setOpen(true);
+
+    // then refresh details from backend (optional but better)
+    try {
+      const res = await apiFetch<ApiUsersResponse>(`/admin-panel/users/${u.id}`, { method: 'GET' });
+      const full = res?.data && typeof res.data === 'object' ? (res.data as UserRow) : null;
+      if (full && typeof full.id === 'number') {
+        setEditing(full);
+        setFirstName(full.first_name ?? '');
+        setLastName(full.last_name ?? '');
+        setEmail(full.email ?? '');
+        setPhone(full.phone ?? '');
+        setType(full.type ?? '');
+      }
+    } catch {
+      // ignore show errors; keep row data
+    }
   };
+
+  const buildPartialPayload = (base: UserRow) => {
+    const payload: any = {};
+
+    const fn = firstName.trim();
+    const ln = lastName.trim();
+    const em = email.trim();
+    const ph = phone.trim();
+    const tp = type.trim();
+
+    if (fn !== (base.first_name ?? '')) payload.first_name = fn;
+    if (ln !== (base.last_name ?? '')) payload.last_name = ln;
+    if (em !== (base.email ?? '')) payload.email = em;
+    if (ph !== (base.phone ?? '')) payload.phone = ph || null;
+    if (tp !== (base.type ?? '')) payload.type = tp;
+
+    return payload;
+  };
+
+  const tryUpdate = async (userId: number, payloadCandidates: any[]) => {
+    let lastError: any = null;
+
+    for (const payload of payloadCandidates) {
+      try {
+        await apiFetch(`/admin-panel/users/${userId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        return;
+      } catch (e: any) {
+        lastError = e;
+      }
+    }
+
+    throw lastError ?? new Error('Update failed');
+  };
+
+  // ========= Actions =========
 
   const saveEdit = async () => {
     if (!editing) return;
 
+    const payload = buildPartialPayload(editing);
+
+    // no changes
+    if (Object.keys(payload).length === 0) {
+      closeModal();
+      return;
+    }
+
     setLoading(true);
     setErr('');
     try {
-      const payload: any = {
-        first_name: firstName,
-        last_name: lastName,
-        email,
-        phone,
-        type,
-      };
-
-      // ✅ NEW: admin-panel endpoint
       await apiFetch(`/admin-panel/users/${editing.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
 
-      setOpen(false);
-      setEditing(null);
-      await loadUsers(page);
+      closeModal();
+      await loadUsers(page, q, perPage);
     } catch (e: any) {
       setErr(e?.message || 'فشل تعديل المستخدم.');
     } finally {
@@ -232,106 +330,72 @@ export default function Users() {
     }
   };
 
-  const setActiveUser = async (u: UserRow, makeActive: boolean) => {
+  const toggleActive = async (u: UserRow) => {
+    const next = !isActive(u);
+
     setLoading(true);
     setErr('');
     try {
-      // ✅ NEW: admin-panel endpoint
-      await apiFetch(`/admin-panel/users/${u.id}/active`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ is_active: makeActive }),
-      });
+      // ✅ robust: try different fields depending on DB schema
+      await tryUpdate(u.id, [
+        { is_active: next },
+        { active: next },
+        { status: next ? 'active' : 'inactive' },
+      ]);
 
-      await loadUsers(page);
+      await loadUsers(page, q, perPage);
     } catch (e: any) {
-      // fallback (legacy)
-      try {
-        await apiFetch(`/admin/users/${u.id}/toggle-status`, { method: 'POST' });
-        await loadUsers(page);
-      } catch (e2: any) {
-        setErr(e2?.message || e?.message || 'فشل تحديث حالة المستخدم.');
-      }
+      setErr(e?.message || 'فشل تحديث حالة المستخدم.');
     } finally {
       setLoading(false);
     }
   };
 
   const setKycUser = async (u: UserRow, next: 'pending' | 'verified' | 'rejected') => {
+    // ✅ ملاحظة: AdminPanel\UserController الحالي لا يدعم kyc_status
+    // فهنعتمد على legacy admin endpoints (approve/reject). pending هنسيبه كعرض فقط.
+    if (next === 'pending') return;
+
     setLoading(true);
     setErr('');
     try {
-      // ✅ NEW: admin-panel endpoint
-      await apiFetch(`/admin-panel/users/${u.id}/kyc`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ kyc_status: next }),
-      });
-
-      await loadUsers(page);
-    } catch (e: any) {
-      // fallback legacy
-      try {
-        if (next === 'verified') {
-          await apiFetch(`/admin/dealers/${u.id}/approve-verification`, { method: 'POST' });
-        } else if (next === 'rejected') {
-          await apiFetch(`/admin/dealers/${u.id}/reject-verification`, { method: 'POST' });
-        } else {
-          await apiFetch(`/admin/users/${u.id}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ kyc_status: 'pending' }),
-          });
-        }
-        await loadUsers(page);
-      } catch (e2: any) {
-        setErr(e2?.message || e?.message || 'فشل تحديث حالة التوثيق.');
+      if (next === 'verified') {
+        await apiFetch(`/admin/dealers/${u.id}/approve-verification`, { method: 'POST' });
+      } else {
+        await apiFetch(`/admin/dealers/${u.id}/reject-verification`, { method: 'POST' });
       }
+      await loadUsers(page, q, perPage);
+    } catch (e: any) {
+      setErr(e?.message || 'فشل تحديث حالة التوثيق (KYC).');
     } finally {
       setLoading(false);
     }
   };
 
-  const deleteUser = async (u: UserRow) => {
-    const ok = confirm(`هل أنت متأكد من حذف المستخدم #${u.id} (${displayName(u)}) ؟`);
-    if (!ok) return;
-
-    setLoading(true);
-    setErr('');
-    try {
-      // ✅ NEW: admin-panel endpoint
-      await apiFetch(`/admin-panel/users/${u.id}`, { method: 'DELETE' });
-      await loadUsers(page);
-    } catch (e: any) {
-      // fallback legacy
-      try {
-        await apiFetch(`/admin/users/${u.id}`, { method: 'DELETE' });
-        await loadUsers(page);
-      } catch (e2: any) {
-        setErr(e2?.message || e?.message || 'فشل حذف المستخدم.');
-      }
-    } finally {
-      setLoading(false);
-    }
+  const onPerPageChange = async (v: number) => {
+    setPerPage(v);
+    await loadUsers(1, q, v);
   };
 
   return (
     <Layout title="المستخدمين">
       <div className="min-h-screen bg-gray-50/50">
         <div className="p-4 sm:p-6 lg:p-8 space-y-6">
-
           {/* Header */}
           <div className="rounded-3xl bg-white border border-gray-100 shadow-sm p-6">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900">المستخدمين</h1>
-                <p className="mt-2 text-sm text-gray-600">إدارة كاملة: تعديل / تفعيل / KYC / حذف</p>
+                <p className="mt-2 text-sm text-gray-600">
+                  مربوط على <span className="font-extrabold">/admin-panel/users</span> (بحث + Pagination + تعديل)
+                </p>
               </div>
 
               <div className="flex items-center gap-2">
                 <button
-                  onClick={() => loadUsers(page)}
+                  onClick={() => loadUsers(page, q, perPage)}
                   className="inline-flex items-center gap-2 rounded-2xl bg-white border border-gray-100 px-4 py-3 shadow-sm hover:bg-gray-50 transition"
+                  disabled={loading}
                 >
                   <ArrowPathIcon className="h-5 w-5 text-indigo-600" />
                   <span className="text-sm font-bold text-gray-800">تحديث</span>
@@ -356,11 +420,26 @@ export default function Users() {
                 />
               </div>
 
-              <div className="text-sm text-gray-600">
-                الإجمالي:{' '}
-                <span className="font-extrabold text-gray-900">
-                  {loading ? '—' : stats.total}
-                </span>
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="text-sm text-gray-600">
+                  الإجمالي:{' '}
+                  <span className="font-extrabold text-gray-900">{loading ? '—' : stats.total}</span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-bold text-gray-600">per page</span>
+                  <select
+                    value={perPage}
+                    onChange={(e) => onPerPageChange(Number(e.target.value))}
+                    className="rounded-2xl border border-gray-100 bg-white px-3 py-2 text-sm font-bold outline-none focus:ring-2 focus:ring-indigo-200"
+                    disabled={loading}
+                  >
+                    <option value={10}>10</option>
+                    <option value={20}>20</option>
+                    <option value={50}>50</option>
+                    <option value={100}>100</option>
+                  </select>
+                </div>
               </div>
             </div>
           </div>
@@ -376,9 +455,7 @@ export default function Users() {
           {/* Table */}
           <div className="rounded-3xl border border-gray-100 bg-white overflow-hidden">
             <div className="p-6 border-b border-gray-100 flex items-center justify-between">
-              <h2 className="text-lg font-extrabold text-gray-900">
-                قائمة المستخدمين {loading ? '' : `(${filtered.length})`}
-              </h2>
+              <h2 className="text-lg font-extrabold text-gray-900">قائمة المستخدمين</h2>
               <div className="text-xs text-gray-400">
                 Page {page} / {lastPage}
               </div>
@@ -409,7 +486,7 @@ export default function Users() {
                     </tr>
                   )}
 
-                  {!loading && filtered.length === 0 && (
+                  {!loading && users.length === 0 && (
                     <tr>
                       <td colSpan={9} className="py-10 text-center text-gray-500">
                         لا توجد نتائج
@@ -418,7 +495,7 @@ export default function Users() {
                   )}
 
                   {!loading &&
-                    filtered.map((u) => {
+                    users.map((u) => {
                       const active = isActive(u);
 
                       return (
@@ -439,7 +516,6 @@ export default function Users() {
 
                           <td className="py-3 px-4">
                             <div className="flex flex-wrap items-center gap-2">
-
                               <button
                                 onClick={() => openEdit(u)}
                                 className="inline-flex items-center gap-1 rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs font-extrabold text-gray-800 hover:bg-gray-50"
@@ -449,8 +525,9 @@ export default function Users() {
                               </button>
 
                               <button
-                                onClick={() => setActiveUser(u, !active)}
-                                className={`inline-flex items-center gap-1 rounded-xl border px-3 py-2 text-xs font-extrabold ${
+                                onClick={() => toggleActive(u)}
+                                disabled={loading}
+                                className={`inline-flex items-center gap-1 rounded-xl border px-3 py-2 text-xs font-extrabold disabled:opacity-50 ${
                                   active
                                     ? 'border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100'
                                     : 'border-emerald-200 bg-emerald-50 text-emerald-800 hover:bg-emerald-100'
@@ -460,24 +537,18 @@ export default function Users() {
                                 {active ? 'تعطيل' : 'تفعيل'}
                               </button>
 
+                              {/* KYC (legacy approve/reject only) */}
                               <select
                                 value={((u.kyc_status ?? 'pending') as any)}
                                 onChange={(e) => setKycUser(u, e.target.value as any)}
                                 className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs font-extrabold text-gray-800"
+                                disabled={loading}
+                                title="KYC يتم عبر legacy admin dealers approve/reject"
                               >
                                 <option value="pending">KYC: pending</option>
                                 <option value="verified">KYC: verified</option>
                                 <option value="rejected">KYC: rejected</option>
                               </select>
-
-                              <button
-                                onClick={() => deleteUser(u)}
-                                className="inline-flex items-center gap-1 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-extrabold text-red-700 hover:bg-red-100"
-                              >
-                                <TrashIcon className="h-4 w-4" />
-                                حذف
-                              </button>
-
                             </div>
                           </td>
                         </tr>
@@ -491,7 +562,7 @@ export default function Users() {
             <div className="p-4 border-t border-gray-100 flex items-center justify-between">
               <button
                 disabled={loading || page <= 1}
-                onClick={() => loadUsers(page - 1)}
+                onClick={() => loadUsers(page - 1, q, perPage)}
                 className="rounded-2xl border border-gray-100 bg-gray-50 hover:bg-gray-100 transition px-4 py-2 text-sm font-bold disabled:opacity-40"
               >
                 السابق
@@ -504,7 +575,7 @@ export default function Users() {
 
               <button
                 disabled={loading || page >= lastPage}
-                onClick={() => loadUsers(page + 1)}
+                onClick={() => loadUsers(page + 1, q, perPage)}
                 className="rounded-2xl border border-gray-100 bg-gray-50 hover:bg-gray-100 transition px-4 py-2 text-sm font-bold disabled:opacity-40"
               >
                 التالي
@@ -512,94 +583,108 @@ export default function Users() {
             </div>
           </div>
 
-          {/* Edit Modal */}
+          {/* Edit Modal (قصير ومش مزعج) */}
           {open && (
-            <div
-              className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4"
-              onClick={() => setOpen(false)}
-            >
-              <div
-                className="w-full max-w-xl rounded-3xl bg-white border border-gray-100 shadow-xl p-6"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <div className="flex items-center justify-between gap-3">
-                  <h3 className="text-lg font-extrabold text-gray-900">
-                    تعديل المستخدم #{editing?.id}
-                  </h3>
-                  <button
-                    onClick={() => setOpen(false)}
-                    className="rounded-2xl border border-gray-200 px-3 py-2 text-sm font-bold hover:bg-gray-50"
-                  >
-                    إغلاق
-                  </button>
-                </div>
-
-                <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <label className="text-sm font-bold text-gray-700">
-                    الاسم الأول
-                    <input
-                      value={firstName}
-                      onChange={(e) => setFirstName(e.target.value)}
-                      className="mt-2 w-full rounded-2xl border border-gray-200 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-indigo-200"
-                    />
-                  </label>
-
-                  <label className="text-sm font-bold text-gray-700">
-                    الاسم الأخير
-                    <input
-                      value={lastName}
-                      onChange={(e) => setLastName(e.target.value)}
-                      className="mt-2 w-full rounded-2xl border border-gray-200 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-indigo-200"
-                    />
-                  </label>
-
-                  <label className="text-sm font-bold text-gray-700 sm:col-span-2">
-                    البريد
-                    <input
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="mt-2 w-full rounded-2xl border border-gray-200 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-indigo-200"
-                    />
-                  </label>
-
-                  <label className="text-sm font-bold text-gray-700">
-                    الهاتف
-                    <input
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      className="mt-2 w-full rounded-2xl border border-gray-200 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-indigo-200"
-                    />
-                  </label>
-
-                  <label className="text-sm font-bold text-gray-700">
-                    النوع (type)
-                    <input
-                      value={type}
-                      onChange={(e) => setType(e.target.value)}
-                      placeholder="dealer / user / admin ..."
-                      className="mt-2 w-full rounded-2xl border border-gray-200 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-indigo-200"
-                    />
-                  </label>
-                </div>
-
-                <div className="mt-5 flex items-center justify-between gap-2">
-                  <div className="text-xs text-gray-500">
-                    * التوثيق (KYC) والتفعيل موجودين كأزرار في الجدول لتسهيل الإدارة
+            <div className="fixed inset-0 z-50">
+              <button
+                className="absolute inset-0 bg-black/45 supports-[backdrop-filter]:backdrop-blur-sm"
+                aria-label="إغلاق"
+                onClick={closeModal}
+              />
+              <div className="relative w-full h-full flex items-start justify-center p-4 sm:p-6">
+                <div className="w-full max-w-2xl rounded-3xl bg-white border border-gray-100 shadow-xl overflow-hidden mt-10">
+                  <div className="p-5 border-b border-gray-100 flex items-center justify-between">
+                    <div>
+                      <div className="text-lg font-extrabold text-gray-900">تعديل المستخدم #{editing?.id}</div>
+                      <div className="text-xs text-gray-500">Admin Panel</div>
+                    </div>
+                    <button
+                      onClick={closeModal}
+                      className="rounded-2xl border border-gray-100 bg-gray-50 hover:bg-gray-100 transition p-2"
+                      aria-label="إغلاق"
+                    >
+                      <XMarkIcon className="h-5 w-5 text-gray-700" />
+                    </button>
                   </div>
 
-                  <button
-                    onClick={saveEdit}
-                    disabled={loading || !editing}
-                    className="inline-flex items-center gap-2 rounded-2xl bg-indigo-600 text-white px-5 py-3 text-sm font-extrabold hover:bg-indigo-700 disabled:opacity-40"
-                  >
-                    <CheckBadgeIcon className="h-5 w-5" />
-                    حفظ التعديل
-                  </button>
+                  <div className="p-5">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <label className="text-sm font-bold text-gray-700">
+                        الاسم الأول
+                        <input
+                          value={firstName}
+                          onChange={(e) => setFirstName(e.target.value)}
+                          className="mt-2 w-full rounded-2xl border border-gray-200 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-indigo-200"
+                        />
+                      </label>
+
+                      <label className="text-sm font-bold text-gray-700">
+                        الاسم الأخير
+                        <input
+                          value={lastName}
+                          onChange={(e) => setLastName(e.target.value)}
+                          className="mt-2 w-full rounded-2xl border border-gray-200 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-indigo-200"
+                        />
+                      </label>
+
+                      <label className="text-sm font-bold text-gray-700 sm:col-span-2">
+                        البريد
+                        <input
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          className="mt-2 w-full rounded-2xl border border-gray-200 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-indigo-200"
+                        />
+                      </label>
+
+                      <label className="text-sm font-bold text-gray-700">
+                        الهاتف
+                        <input
+                          value={phone}
+                          onChange={(e) => setPhone(e.target.value)}
+                          className="mt-2 w-full rounded-2xl border border-gray-200 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-indigo-200"
+                        />
+                      </label>
+
+                      <label className="text-sm font-bold text-gray-700">
+                        النوع (type)
+                        <input
+                          value={type}
+                          onChange={(e) => setType(e.target.value)}
+                          placeholder="dealer / user / admin ..."
+                          className="mt-2 w-full rounded-2xl border border-gray-200 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-indigo-200"
+                        />
+                      </label>
+                    </div>
+
+                    <div className="mt-4 text-xs text-gray-500 flex flex-wrap gap-3">
+                      <span>Created: <span className="font-bold">{fmtDate(editing?.created_at ?? null)}</span></span>
+                      <span>Updated: <span className="font-bold">{fmtDate(editing?.updated_at ?? null)}</span></span>
+                      <span>Email verified: <span className="font-bold">{editing?.email_verified_at ? 'Yes' : 'No'}</span></span>
+                    </div>
+                  </div>
+
+                  <div className="p-5 border-t border-gray-100 flex items-center justify-end gap-2">
+                    <button
+                      onClick={closeModal}
+                      className="rounded-2xl border border-gray-100 bg-gray-50 hover:bg-gray-100 transition px-4 py-3 text-sm font-bold text-gray-900"
+                      disabled={loading}
+                    >
+                      إلغاء
+                    </button>
+
+                    <button
+                      onClick={saveEdit}
+                      disabled={loading || !editing}
+                      className="inline-flex items-center gap-2 rounded-2xl bg-indigo-600 text-white px-5 py-3 text-sm font-extrabold hover:bg-indigo-700 disabled:opacity-40"
+                    >
+                      <CheckBadgeIcon className="h-5 w-5" />
+                      حفظ
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
           )}
-
         </div>
       </div>
     </Layout>

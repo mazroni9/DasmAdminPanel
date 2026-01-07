@@ -7,83 +7,87 @@ import { getToken } from '../utils/authStorage';
 import {
   UserPlusIcon,
   UserIcon,
-  KeyIcon,
   TrashIcon,
   PencilIcon,
   EyeIcon,
   EyeSlashIcon,
-  BuildingStorefrontIcon,
   MagnifyingGlassIcon,
   ArrowPathIcon,
   XMarkIcon,
+  ClipboardDocumentIcon,
 } from '@heroicons/react/24/outline';
 
-type EmployeeRole = 'admin' | 'employee';
-type EmployeeStatus = 'active' | 'inactive' | string;
-
-type Employee = {
+type EmployeeApi = {
   id: number;
-  name: string;
+  first_name?: string | null;
+  last_name?: string | null;
+  name?: string | null; // legacy
   email: string;
   phone?: string | null;
-  role: EmployeeRole;
-  type?: string;
-  permissions: string[];
-  status: EmployeeStatus;
-  is_active?: boolean;
-  showroom?: string;
-  created_at?: string;
-  last_login?: string | null;
+  type?: string | null;
+  role?: string | null;
+  status?: string | null;
+  is_active?: boolean | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+  email_verified_at?: string | null;
   [key: string]: any;
 };
 
-function extractEmployees(payload: any): Employee[] {
-  const p = payload;
-  const d1 = p?.data;
-  if (Array.isArray(d1)) return d1;
-  const d2 = d1?.data;
-  if (Array.isArray(d2)) return d2;
-  const d3 = d1?.data?.data;
-  if (Array.isArray(d3)) return d3;
-  if (Array.isArray(p)) return p;
+type Paginator<T> = {
+  data: T[];
+  current_page: number;
+  last_page: number;
+  per_page: number;
+  total: number;
+};
+
+type ApiResponse<T> =
+  | { status: 'success'; data: T }
+  | { ok: true; data: T }
+  | any;
+
+function extractEmployees(payload: any): EmployeeApi[] {
+  const list = payload?.data?.data;
+  if (Array.isArray(list)) return list as EmployeeApi[];
+  const list2 = payload?.data;
+  if (Array.isArray(list2)) return list2 as EmployeeApi[];
+  if (Array.isArray(payload)) return payload as EmployeeApi[];
   return [];
 }
 
-function getPagination(payload: any) {
+function extractPaginator(payload: any): Paginator<EmployeeApi> | null {
   const pg = payload?.data;
-  if (pg && typeof pg === 'object') {
-    // Laravel paginator: data/current_page/last_page/total/per_page
+  if (pg && typeof pg === 'object' && Array.isArray(pg.data)) {
     return {
-      current_page: pg.current_page ?? 1,
-      last_page: pg.last_page ?? 1,
-      total: pg.total ?? 0,
-      per_page: pg.per_page ?? 20,
+      data: pg.data,
+      current_page: Number(pg.current_page ?? 1),
+      last_page: Number(pg.last_page ?? 1),
+      per_page: Number(pg.per_page ?? 15),
+      total: Number(pg.total ?? pg.data.length ?? 0),
     };
   }
-  return { current_page: 1, last_page: 1, total: 0, per_page: 20 };
+  return null;
 }
 
-function formatDate(d?: string | null) {
-  if (!d) return '—';
-  const x = new Date(d);
-  if (Number.isNaN(x.getTime())) return d;
-  return x.toLocaleDateString('ar-SA', { year: 'numeric', month: 'short', day: 'numeric' });
+function employeeDisplayName(u: EmployeeApi) {
+  const full = `${u.first_name ?? ''} ${u.last_name ?? ''}`.trim();
+  if (full) return full;
+  if (u.name && String(u.name).trim()) return String(u.name).trim();
+  return u.email ? u.email.split('@')[0] : `User #${u.id}`;
 }
 
-function getRoleLabel(role: EmployeeRole) {
-  return role === 'admin' ? 'مدير' : 'موظف';
-}
-
-function roleBadge(role: EmployeeRole) {
-  return role === 'admin'
-    ? 'bg-purple-50 text-purple-800 border-purple-200'
-    : 'bg-blue-50 text-blue-800 border-blue-200';
-}
-
-function isActive(emp: Employee) {
-  if (typeof emp.is_active === 'boolean') return emp.is_active;
-  const s = String(emp.status || '').toLowerCase();
+function isActive(u: EmployeeApi) {
+  if (typeof u.is_active === 'boolean') return u.is_active;
+  const s = String(u.status ?? '').toLowerCase();
   return s === 'active' || s === 'enabled' || s === '1' || s === 'true';
+}
+
+function fmtDateTime(v?: string | null) {
+  if (!v) return '—';
+  const d = new Date(v);
+  if (Number.isNaN(d.getTime())) return '—';
+  return d.toLocaleString('ar-SA', { dateStyle: 'medium', timeStyle: 'short' });
 }
 
 function statusBadge(active: boolean) {
@@ -136,13 +140,9 @@ function Modal({
   return (
     <ModalPortal>
       <div className="fixed inset-0 z-[9999]">
-        <div
-          className="absolute inset-0 bg-black/35 backdrop-blur-md"
-          onClick={onClose}
-          aria-hidden="true"
-        />
+        <div className="absolute inset-0 bg-black/35 backdrop-blur-md" onClick={onClose} aria-hidden="true" />
         <div className="absolute inset-0 flex items-center justify-center p-4">
-          <div className="w-full max-w-3xl rounded-3xl bg-white shadow-2xl border border-gray-100 overflow-hidden">
+          <div className="w-full max-w-2xl max-h-[88vh] rounded-3xl bg-white shadow-2xl border border-gray-100 overflow-hidden">
             <div className="p-5 border-b border-gray-100 flex items-center justify-between">
               <div>
                 <div className="text-lg font-extrabold text-gray-900">{title}</div>
@@ -157,12 +157,11 @@ function Modal({
               </button>
             </div>
 
-            <div className="p-6">{children}</div>
+            {/* مهم: نخلي المحتوى “مضغوط” وما يعملش سكرول مزعج */}
+            <div className="p-6 overflow-auto max-h-[62vh]">{children}</div>
 
             {footer && (
-              <div className="p-5 border-t border-gray-100 flex items-center justify-end gap-2">
-                {footer}
-              </div>
+              <div className="p-5 border-t border-gray-100 flex items-center justify-end gap-2">{footer}</div>
             )}
           </div>
         </div>
@@ -174,69 +173,70 @@ function Modal({
 export default function Employees() {
   const router = useRouter();
 
-  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [employees, setEmployees] = useState<EmployeeApi[]>([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState('');
 
   const [q, setQ] = useState('');
-  const [filterRole, setFilterRole] = useState<'all' | EmployeeRole>('all');
   const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'inactive'>('all');
 
   const [page, setPage] = useState(1);
-  const [pagination, setPagination] = useState({ current_page: 1, last_page: 1, total: 0, per_page: 20 });
+  const [perPage, setPerPage] = useState(15);
+  const [pagination, setPagination] = useState({ current_page: 1, last_page: 1, total: 0, per_page: 15 });
 
   // Modals
   const [createOpen, setCreateOpen] = useState(false);
-  const [editEmp, setEditEmp] = useState<Employee | null>(null);
-  const [viewEmp, setViewEmp] = useState<Employee | null>(null);
+  const [editEmp, setEditEmp] = useState<EmployeeApi | null>(null);
+  const [viewEmp, setViewEmp] = useState<EmployeeApi | null>(null);
+
+  // After create: show the password backend returned
+  const [createdCreds, setCreatedCreds] = useState<{ open: boolean; email: string; password: string } | null>(null);
 
   const [formError, setFormError] = useState('');
 
-  const availablePermissions = [
-    { key: 'add_cars', label: 'إضافة سيارات' },
-    { key: 'edit_cars', label: 'تعديل السيارات' },
-    { key: 'delete_cars', label: 'حذف السيارات' },
-    { key: 'view_cars', label: 'عرض السيارات' },
-    { key: 'manage_auctions', label: 'إدارة المزادات' },
-    { key: 'view_reports', label: 'عرض التقارير' },
-  ];
-
-  const availableShowrooms = [
-    { id: 'platform', name: 'المنصة الرئيسية' },
-    { id: 'maz_brothers', name: 'معرض ماز براذرز' },
-    { id: 'modern_cars', name: 'معرض السيارات الحديث' },
-    { id: 'premium_cars', name: 'معرض السيارات الفاخرة' },
-    { id: 'auto_center', name: 'مركز السيارات' },
-  ];
-
+  // Backend EmployeeController fields
   const [form, setForm] = useState({
     name: '',
     email: '',
     phone: '',
-    role: 'employee' as EmployeeRole,
     password: '',
-    permissions: [] as string[],
-    showroom: 'المنصة الرئيسية',
+    is_active: true,
   });
 
-  const loadEmployees = async (pageToLoad = 1) => {
+  const loadEmployees = async (pageToLoad = 1, overridePerPage?: number) => {
     setLoading(true);
     setErr('');
     try {
       const params = new URLSearchParams();
       params.set('page', String(pageToLoad));
+      params.set('per_page', String(overridePerPage ?? perPage));
       if (q.trim()) params.set('q', q.trim());
-      params.set('per_page', String(pagination.per_page || 20));
 
-      const res = await apiFetch<any>(`/admin/employees?${params.toString()}`, { method: 'GET' });
-      const list = extractEmployees(res);
+      const res = await apiFetch<ApiResponse<Paginator<EmployeeApi>>>(`/admin/employees?${params.toString()}`, {
+        method: 'GET',
+      });
+
+      const pg = extractPaginator(res);
+      const list = pg ? pg.data : extractEmployees(res);
+
       setEmployees(list);
-      setPagination(getPagination(res));
+      if (pg) {
+        setPagination({
+          current_page: pg.current_page,
+          last_page: pg.last_page,
+          total: pg.total,
+          per_page: pg.per_page,
+        });
+        setPerPage(pg.per_page);
+      } else {
+        setPagination({ current_page: pageToLoad, last_page: 1, total: list.length, per_page: overridePerPage ?? perPage });
+      }
+
       setPage(pageToLoad);
     } catch (e: any) {
       setErr(e?.message || 'حدث خطأ أثناء تحميل الموظفين.');
       setEmployees([]);
-      setPagination({ current_page: 1, last_page: 1, total: 0, per_page: 20 });
+      setPagination({ current_page: 1, last_page: 1, total: 0, per_page: perPage });
       setPage(1);
     } finally {
       setLoading(false);
@@ -257,37 +257,28 @@ export default function Employees() {
     const s = q.trim().toLowerCase();
 
     return employees.filter((emp) => {
-      if (filterRole !== 'all' && emp.role !== filterRole) return false;
-
       const active = isActive(emp);
+
       if (filterStatus !== 'all') {
         if (filterStatus === 'active' && !active) return false;
         if (filterStatus === 'inactive' && active) return false;
       }
 
+      // حتى لو السيرفر بيعمل search، نخلي العميل كمان robust
       if (!s) return true;
-      const name = String(emp.name || '').toLowerCase();
+      const name = employeeDisplayName(emp).toLowerCase();
       const email = String(emp.email || '').toLowerCase();
       const phone = String(emp.phone || '').toLowerCase();
-      const showroom = String(emp.showroom || '').toLowerCase();
       const id = String(emp.id || '').toLowerCase();
-
-      return (
-        name.includes(s) ||
-        email.includes(s) ||
-        phone.includes(s) ||
-        showroom.includes(s) ||
-        id.includes(s)
-      );
+      return name.includes(s) || email.includes(s) || phone.includes(s) || id.includes(s);
     });
-  }, [employees, q, filterRole, filterStatus]);
+  }, [employees, q, filterStatus]);
 
   const stats = useMemo(() => {
     const total = employees.length;
     const active = employees.filter((e) => isActive(e)).length;
-    const admins = employees.filter((e) => e.role === 'admin').length;
-    const platform = employees.filter((e) => (e.showroom || '') === 'المنصة الرئيسية').length;
-    return { total, active, admins, platform };
+    const inactive = total - active;
+    return { total, active, inactive };
   }, [employees]);
 
   const openCreate = () => {
@@ -299,37 +290,41 @@ export default function Employees() {
       name: '',
       email: '',
       phone: '',
-      role: 'employee',
       password: '',
-      permissions: [],
-      showroom: 'المنصة الرئيسية',
+      is_active: true,
     });
   };
 
-  const openEdit = (emp: Employee) => {
+  const openEdit = (emp: EmployeeApi) => {
     setFormError('');
     setEditEmp(emp);
     setCreateOpen(false);
     setViewEmp(null);
     setForm({
-      name: emp.name || '',
+      name: employeeDisplayName(emp),
       email: emp.email || '',
       phone: emp.phone ? String(emp.phone) : '',
-      role: emp.role || 'employee',
       password: '',
-      permissions: Array.isArray(emp.permissions) ? emp.permissions : [],
-      showroom: emp.showroom || 'المنصة الرئيسية',
+      is_active: isActive(emp),
     });
   };
 
-  const openView = (emp: Employee) => {
-    setViewEmp(emp);
+  const openView = async (emp: EmployeeApi) => {
+    setFormError('');
     setEditEmp(null);
     setCreateOpen(false);
-    setFormError('');
+
+    // الأفضل: نقرأ من show endpoint عشان يبقى أحدث
+    try {
+      const res = await apiFetch<any>(`/admin/employees/${emp.id}`, { method: 'GET' });
+      const data = res?.data && typeof res.data === 'object' ? (res.data as EmployeeApi) : (emp as EmployeeApi);
+      setViewEmp(data);
+    } catch {
+      setViewEmp(emp);
+    }
   };
 
-  const closeModal = () => {
+  const closeAll = () => {
     setCreateOpen(false);
     setEditEmp(null);
     setViewEmp(null);
@@ -339,27 +334,40 @@ export default function Employees() {
   const handleCreate = async () => {
     setFormError('');
 
-    if (!form.name.trim() || !form.email.trim() || !form.password.trim()) {
-      setFormError('يرجى إدخال الاسم + البريد + كلمة المرور.');
+    if (!form.email.trim()) {
+      setFormError('يرجى إدخال البريد الإلكتروني.');
       return;
     }
 
     try {
-      await apiFetch<any>(`/admin/employees`, {
+      const payload: any = {
+        email: form.email.trim(),
+        phone: form.phone?.trim() ? form.phone.trim() : null,
+        is_active: !!form.is_active,
+      };
+
+      // اسم واحد (الـ backend بيعمل split لو first_name مش متبعت)
+      if (form.name.trim()) payload.name = form.name.trim();
+
+      // كلمة المرور اختيارية في الـ backend (لو فاضية هيولّد ويرجع plain_password)
+      if (form.password.trim()) payload.password = form.password.trim();
+
+      const res = await apiFetch<any>(`/admin/employees`, {
         method: 'POST',
-        body: JSON.stringify({
-          name: form.name,
-          email: form.email,
-          phone: form.phone,
-          role: form.role,
-          password: form.password,
-          permissions: form.permissions,
-          // showroom: form.showroom (الـ backend الحالي بيحسبه تلقائيًا)
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
       });
 
+      // ريفرش اللست
       await loadEmployees(page);
-      closeModal();
+
+      // اقفل المودال واظهر الباسورد اللي رجع من السيرفر
+      setCreateOpen(false);
+
+      const pw = String(res?.plain_password ?? '').trim();
+      if (pw) {
+        setCreatedCreds({ open: true, email: payload.email, password: pw });
+      }
     } catch (e: any) {
       setFormError(e?.message || 'تعذر إنشاء الموظف.');
     }
@@ -369,37 +377,40 @@ export default function Employees() {
     if (!editEmp) return;
     setFormError('');
 
-    if (!form.name.trim()) {
-      setFormError('يرجى إدخال الاسم.');
+    if (!form.email.trim()) {
+      setFormError('البريد الإلكتروني مطلوب.');
       return;
     }
 
     try {
       const payload: any = {
-        name: form.name,
-        phone: form.phone,
-        role: form.role,
-        permissions: form.permissions,
+        email: form.email.trim(),
+        phone: form.phone?.trim() ? form.phone.trim() : null,
+        is_active: !!form.is_active,
       };
-      if (form.password.trim()) payload.password = form.password;
+
+      if (form.name.trim()) payload.name = form.name.trim();
+      if (form.password.trim()) payload.password = form.password.trim();
 
       await apiFetch<any>(`/admin/employees/${editEmp.id}`, {
         method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
 
       await loadEmployees(page);
-      closeModal();
+      closeAll();
     } catch (e: any) {
       setFormError(e?.message || 'تعذر تحديث الموظف.');
     }
   };
 
-  const toggleStatus = async (emp: Employee) => {
+  const toggleStatus = async (emp: EmployeeApi) => {
     const next = !isActive(emp);
     try {
       await apiFetch<any>(`/admin/employees/${emp.id}/status`, {
         method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ is_active: next }),
       });
       await loadEmployees(page);
@@ -408,13 +419,30 @@ export default function Employees() {
     }
   };
 
-  const handleDelete = async (emp: Employee) => {
-    if (!confirm(`هل أنت متأكد من حذف ${emp.name}؟`)) return;
+  const handleDelete = async (emp: EmployeeApi) => {
+    const name = employeeDisplayName(emp);
+    if (!confirm(`هل أنت متأكد من حذف الموظف "${name}"؟`)) return;
     try {
       await apiFetch<any>(`/admin/employees/${emp.id}`, { method: 'DELETE' });
-      await loadEmployees(page);
+      // لو الصفحة فضيت بعد الحذف، ارجع صفحة
+      const willBeEmpty = filteredEmployees.length === 1 && page > 1;
+      await loadEmployees(willBeEmpty ? page - 1 : page);
     } catch (e: any) {
       alert(e?.message || 'تعذر حذف الموظف.');
+    }
+  };
+
+  const copyToClipboard = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      // fallback بسيط
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
     }
   };
 
@@ -427,7 +455,7 @@ export default function Employees() {
             <div>
               <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900">إدارة الموظفين</h1>
               <p className="mt-2 text-sm text-gray-600">
-                إضافة وتعديل وحذف وتفعيل/تعطيل الموظفين — مربوط بالـ Backend
+                CRUD كامل + تفعيل/تعطيل — مربوط بـ Admin EmployeeController
               </p>
             </div>
 
@@ -463,23 +491,15 @@ export default function Employees() {
               <input
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
-                placeholder="بحث بالاسم / البريد / الهاتف / المعرض / ID"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') loadEmployees(1);
+                }}
+                placeholder="بحث بالاسم / البريد / الهاتف / ID"
                 className="w-full rounded-2xl border border-gray-100 bg-white px-12 py-3 text-sm outline-none focus:ring-2 focus:ring-blue-200"
               />
             </div>
 
             <div className="flex flex-wrap gap-2 items-center">
-              <span className="text-sm font-semibold text-gray-600">الدور:</span>
-              <select
-                value={filterRole}
-                onChange={(e) => setFilterRole(e.target.value as any)}
-                className="rounded-2xl border border-gray-100 bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-blue-200"
-              >
-                <option value="all">الكل</option>
-                <option value="admin">مدير</option>
-                <option value="employee">موظف</option>
-              </select>
-
               <span className="text-sm font-semibold text-gray-600">الحالة:</span>
               <select
                 value={filterStatus}
@@ -489,6 +509,22 @@ export default function Employees() {
                 <option value="all">الكل</option>
                 <option value="active">نشط</option>
                 <option value="inactive">غير نشط</option>
+              </select>
+
+              <span className="text-sm font-semibold text-gray-600">عدد/صفحة:</span>
+              <select
+                value={perPage}
+                onChange={(e) => {
+                  const n = Number(e.target.value);
+                  setPerPage(n);
+                  loadEmployees(1, n);
+                }}
+                className="rounded-2xl border border-gray-100 bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-blue-200"
+              >
+                <option value={10}>10</option>
+                <option value={15}>15</option>
+                <option value={20}>20</option>
+                <option value={50}>50</option>
               </select>
 
               <button
@@ -502,9 +538,9 @@ export default function Employees() {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 sm:gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
           <MiniCard
-            title="إجمالي الموظفين"
+            title="إجمالي (في الصفحة الحالية)"
             value={loading ? '—' : String(stats.total)}
             icon={<UserIcon className="h-6 w-6 text-blue-700" />}
             accent="bg-blue-50"
@@ -516,16 +552,10 @@ export default function Employees() {
             accent="bg-emerald-50"
           />
           <MiniCard
-            title="مديرين"
-            value={loading ? '—' : String(stats.admins)}
-            icon={<KeyIcon className="h-6 w-6 text-purple-700" />}
-            accent="bg-purple-50"
-          />
-          <MiniCard
-            title="المنصة الرئيسية"
-            value={loading ? '—' : String(stats.platform)}
-            icon={<BuildingStorefrontIcon className="h-6 w-6 text-indigo-700" />}
-            accent="bg-indigo-50"
+            title="غير نشط"
+            value={loading ? '—' : String(stats.inactive)}
+            icon={<EyeSlashIcon className="h-6 w-6 text-rose-700" />}
+            accent="bg-rose-50"
           />
         </div>
 
@@ -535,7 +565,8 @@ export default function Employees() {
             <h2 className="text-lg font-extrabold text-gray-900">قائمة الموظفين</h2>
 
             <div className="text-sm text-gray-600">
-              الإجمالي: <span className="font-extrabold text-gray-900">{loading ? '—' : pagination.total}</span>
+              الإجمالي (سيرفر):{' '}
+              <span className="font-extrabold text-gray-900">{loading ? '—' : pagination.total}</span>
             </div>
           </div>
 
@@ -546,10 +577,8 @@ export default function Employees() {
                   <th className="py-4 px-4">#</th>
                   <th className="py-4 px-4">الموظف</th>
                   <th className="py-4 px-4">البريد</th>
-                  <th className="py-4 px-4">الدور</th>
-                  <th className="py-4 px-4">المعرض</th>
                   <th className="py-4 px-4">الحالة</th>
-                  <th className="py-4 px-4">آخر دخول</th>
+                  <th className="py-4 px-4">تاريخ الإنشاء</th>
                   <th className="py-4 px-4">إجراءات</th>
                 </tr>
               </thead>
@@ -557,7 +586,7 @@ export default function Employees() {
               <tbody>
                 {loading && (
                   <tr>
-                    <td colSpan={8} className="py-10 text-center text-gray-400">
+                    <td colSpan={6} className="py-10 text-center text-gray-400">
                       جاري التحميل...
                     </td>
                   </tr>
@@ -565,7 +594,7 @@ export default function Employees() {
 
                 {!loading && filteredEmployees.length === 0 && (
                   <tr>
-                    <td colSpan={8} className="py-10 text-center text-gray-500">
+                    <td colSpan={6} className="py-10 text-center text-gray-500">
                       لا توجد نتائج مطابقة
                     </td>
                   </tr>
@@ -574,28 +603,18 @@ export default function Employees() {
                 {!loading &&
                   filteredEmployees.map((emp) => {
                     const active = isActive(emp);
+                    const name = employeeDisplayName(emp);
+
                     return (
                       <tr key={emp.id} className="border-b border-gray-50 last:border-b-0">
                         <td className="py-4 px-4 font-extrabold text-gray-900">{emp.id}</td>
 
                         <td className="py-4 px-4 text-gray-900">
-                          <div className="font-bold">{emp.name || `User #${emp.id}`}</div>
+                          <div className="font-bold">{name}</div>
                           <div className="text-xs text-gray-500">{emp.phone || '—'}</div>
                         </td>
 
                         <td className="py-4 px-4 text-gray-700">{emp.email}</td>
-
-                        <td className="py-4 px-4">
-                          <span className={`inline-flex items-center rounded-xl border px-2 py-1 text-xs font-extrabold ${roleBadge(emp.role)}`}>
-                            {getRoleLabel(emp.role)}
-                          </span>
-                        </td>
-
-                        <td className="py-4 px-4">
-                          <span className="inline-flex items-center rounded-xl border border-gray-200 bg-gray-50 px-2 py-1 text-xs font-bold text-gray-800">
-                            {emp.showroom || '—'}
-                          </span>
-                        </td>
 
                         <td className="py-4 px-4">
                           <button
@@ -608,7 +627,7 @@ export default function Employees() {
                           </button>
                         </td>
 
-                        <td className="py-4 px-4 text-gray-600">{formatDate(emp.last_login)}</td>
+                        <td className="py-4 px-4 text-gray-600">{fmtDateTime(emp.created_at)}</td>
 
                         <td className="py-4 px-4">
                           <div className="flex items-center gap-2">
@@ -617,8 +636,8 @@ export default function Employees() {
                               className="inline-flex items-center gap-1 rounded-xl border border-gray-100 bg-gray-50 hover:bg-gray-100 transition px-3 py-2 text-xs font-bold text-gray-900"
                               title="عرض"
                             >
-                              <KeyIcon className="h-4 w-4" />
-                              صلاحيات
+                              <EyeIcon className="h-4 w-4" />
+                              عرض
                             </button>
 
                             <button
@@ -675,12 +694,12 @@ export default function Employees() {
         <Modal
           open={createOpen || !!editEmp}
           title={createOpen ? 'إضافة موظف جديد' : 'تعديل موظف'}
-          subtitle={createOpen ? 'Create Employee' : editEmp ? `Edit #${editEmp.id}` : undefined}
-          onClose={closeModal}
+          subtitle={createOpen ? 'POST /admin/employees' : editEmp ? `PUT /admin/employees/${editEmp.id}` : undefined}
+          onClose={closeAll}
           footer={
             <>
               <button
-                onClick={closeModal}
+                onClick={closeAll}
                 className="rounded-2xl border border-gray-100 bg-gray-50 hover:bg-gray-100 transition px-4 py-3 text-sm font-bold text-gray-900"
               >
                 إغلاق
@@ -688,7 +707,8 @@ export default function Employees() {
               {editEmp && (
                 <button
                   onClick={handleUpdate}
-                  className="rounded-2xl bg-blue-600 hover:bg-blue-700 transition px-4 py-3 text-sm font-bold text-white"
+                  disabled={loading}
+                  className="rounded-2xl bg-blue-600 hover:bg-blue-700 transition px-4 py-3 text-sm font-bold text-white disabled:opacity-50"
                 >
                   حفظ التعديل
                 </button>
@@ -696,7 +716,8 @@ export default function Employees() {
               {createOpen && (
                 <button
                   onClick={handleCreate}
-                  className="rounded-2xl bg-blue-600 hover:bg-blue-700 transition px-4 py-3 text-sm font-bold text-white"
+                  disabled={loading}
+                  className="rounded-2xl bg-blue-600 hover:bg-blue-700 transition px-4 py-3 text-sm font-bold text-white disabled:opacity-50"
                 >
                   إنشاء
                 </button>
@@ -712,97 +733,69 @@ export default function Employees() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Input
-              label="الاسم"
+              label="الاسم (اختياري)"
               value={form.name}
               onChange={(v) => setForm({ ...form, name: v })}
-              placeholder="اسم الموظف"
+              placeholder="مثال: Ahmed Ali"
             />
+
             <Input
               label="البريد الإلكتروني"
               value={form.email}
               onChange={(v) => setForm({ ...form, email: v })}
               placeholder="email@example.com"
-              disabled={!!editEmp} // البريد ثابت في update في الكنترولر الحالي
             />
+
             <Input
-              label="رقم الهاتف"
+              label="رقم الهاتف (اختياري)"
               value={form.phone}
               onChange={(v) => setForm({ ...form, phone: v })}
               placeholder="0500000000"
             />
 
-            <div>
-              <label className="block text-sm font-extrabold text-gray-900 mb-2">الصلاحية</label>
-              <select
-                value={form.role}
-                onChange={(e) => setForm({ ...form, role: e.target.value as EmployeeRole })}
-                className="w-full rounded-2xl border border-gray-100 bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-blue-200"
-              >
-                <option value="employee">موظف</option>
-                <option value="admin">مدير</option>
-              </select>
-            </div>
-
             <Input
-              label={createOpen ? 'كلمة المرور' : 'كلمة المرور (اختياري)'}
+              label={createOpen ? 'كلمة المرور (اختياري)' : 'كلمة المرور (اختياري للتغيير)'}
               value={form.password}
               onChange={(v) => setForm({ ...form, password: v })}
-              placeholder={createOpen ? 'كلمة المرور' : 'اتركها فارغة إذا لا تريد التغيير'}
+              placeholder={createOpen ? 'اتركها فارغة لتوليد كلمة مرور' : 'اتركها فارغة إذا لا تريد تغييرها'}
               type="password"
             />
 
-            <div>
-              <label className="block text-sm font-extrabold text-gray-900 mb-2">المعرض (عرض فقط)</label>
-              <select
-                value={form.showroom}
-                onChange={(e) => setForm({ ...form, showroom: e.target.value })}
-                className="w-full rounded-2xl border border-gray-100 bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-blue-200"
-              >
-                {availableShowrooms.map((s) => (
-                  <option key={s.id} value={s.name}>
-                    {s.name}
-                  </option>
-                ))}
-              </select>
-              <div className="mt-2 text-xs text-gray-500">
-                * الـ Backend الحالي بيحدد المعرض تلقائيًا حسب Organization، الحقل هنا لعرض/تنسيق الواجهة فقط.
+            <div className="md:col-span-2 flex items-center justify-between rounded-2xl border border-gray-100 bg-gray-50 px-4 py-3">
+              <div>
+                <div className="text-sm font-extrabold text-gray-900">حالة الموظف</div>
+                <div className="text-xs text-gray-500 mt-1">دي بتتبعت كـ is_active للـ Backend</div>
               </div>
+
+              <button
+                type="button"
+                onClick={() => setForm({ ...form, is_active: !form.is_active })}
+                className={`inline-flex items-center gap-2 rounded-2xl border px-3 py-2 text-xs font-extrabold transition ${
+                  form.is_active
+                    ? 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100'
+                    : 'bg-rose-50 text-rose-800 border-rose-200 hover:bg-rose-100'
+                }`}
+              >
+                {form.is_active ? <EyeIcon className="h-4 w-4" /> : <EyeSlashIcon className="h-4 w-4" />}
+                {form.is_active ? 'نشط' : 'غير نشط'}
+              </button>
             </div>
 
-            <div className="md:col-span-2">
-              <label className="block text-sm font-extrabold text-gray-900 mb-2">الصلاحيات</label>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                {availablePermissions.map((p) => (
-                  <label key={p.key} className="flex items-center rounded-2xl border border-gray-100 bg-gray-50 px-3 py-2">
-                    <input
-                      type="checkbox"
-                      checked={form.permissions.includes(p.key)}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setForm({ ...form, permissions: [...form.permissions, p.key] });
-                        } else {
-                          setForm({ ...form, permissions: form.permissions.filter((x) => x !== p.key) });
-                        }
-                      }}
-                      className="ml-2"
-                    />
-                    <span className="text-sm text-gray-800 font-semibold">{p.label}</span>
-                  </label>
-                ))}
-              </div>
+            <div className="md:col-span-2 text-xs text-gray-500">
+              * ملاحظة: الـ Backend بيجبر role/type = employee، ومفيش permissions/showroom في الكنترولر ده حالياً.
             </div>
           </div>
         </Modal>
 
-        {/* View Permissions Modal */}
+        {/* View Modal */}
         <Modal
           open={!!viewEmp}
-          title="صلاحيات الموظف"
-          subtitle={viewEmp ? `${viewEmp.name} — #${viewEmp.id}` : undefined}
-          onClose={closeModal}
+          title="تفاصيل الموظف"
+          subtitle={viewEmp ? `GET /admin/employees/${viewEmp.id}` : undefined}
+          onClose={closeAll}
           footer={
             <button
-              onClick={closeModal}
+              onClick={closeAll}
               className="rounded-2xl border border-gray-100 bg-gray-50 hover:bg-gray-100 transition px-4 py-3 text-sm font-bold text-gray-900"
             >
               إغلاق
@@ -810,32 +803,53 @@ export default function Employees() {
           }
         >
           {viewEmp && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Field label="الاسم" value={viewEmp.name} />
-                <Field label="البريد" value={viewEmp.email} />
-                <Field label="الهاتف" value={viewEmp.phone || '—'} />
-                <Field label="الدور" value={getRoleLabel(viewEmp.role)} />
-                <Field label="المعرض" value={viewEmp.showroom || '—'} />
-                <Field label="الحالة" value={isActive(viewEmp) ? 'نشط' : 'غير نشط'} />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Field label="ID" value={viewEmp.id} />
+              <Field label="الاسم" value={employeeDisplayName(viewEmp)} />
+              <Field label="البريد" value={viewEmp.email} />
+              <Field label="الهاتف" value={viewEmp.phone || '—'} />
+              <Field label="الحالة" value={isActive(viewEmp) ? 'نشط' : 'غير نشط'} />
+              <Field label="تاريخ الإنشاء" value={fmtDateTime(viewEmp.created_at)} />
+              <Field label="آخر تحديث" value={fmtDateTime(viewEmp.updated_at)} />
+              <Field label="Email Verified" value={viewEmp.email_verified_at ? 'Yes' : 'No'} />
+            </div>
+          )}
+        </Modal>
+
+        {/* Created Password Modal */}
+        <Modal
+          open={!!createdCreds?.open}
+          title="تم إنشاء الموظف"
+          subtitle={createdCreds ? createdCreds.email : undefined}
+          onClose={() => setCreatedCreds(null)}
+          footer={
+            <button
+              onClick={() => setCreatedCreds(null)}
+              className="rounded-2xl bg-blue-600 hover:bg-blue-700 transition px-4 py-3 text-sm font-bold text-white"
+            >
+              تمام
+            </button>
+          }
+        >
+          {createdCreds && (
+            <div className="space-y-3">
+              <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                احتفظ بكلمة المرور دي — السيرفر رجّعها كـ <b>plain_password</b>.
               </div>
 
-              <div>
-                <div className="text-sm font-extrabold text-gray-900 mb-2">الصلاحيات</div>
-                {Array.isArray(viewEmp.permissions) && viewEmp.permissions.length > 0 ? (
-                  <div className="flex flex-wrap gap-2">
-                    {viewEmp.permissions.map((perm) => (
-                      <span
-                        key={perm}
-                        className="inline-flex items-center rounded-2xl border border-gray-200 bg-gray-50 px-3 py-1 text-xs font-bold text-gray-900"
-                      >
-                        {perm}
-                      </span>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-sm text-gray-500">لا توجد صلاحيات (أو لم يتم تفعيل Spatie بالكامل).</div>
-                )}
+              <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4 flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="text-xs font-bold text-gray-500">Password</div>
+                  <div className="mt-1 font-extrabold text-gray-900 break-all">{createdCreds.password}</div>
+                </div>
+
+                <button
+                  onClick={() => copyToClipboard(createdCreds.password)}
+                  className="shrink-0 inline-flex items-center gap-2 rounded-2xl border border-gray-200 bg-white px-3 py-2 text-xs font-extrabold text-gray-900 hover:bg-gray-50"
+                >
+                  <ClipboardDocumentIcon className="h-4 w-4" />
+                  نسخ
+                </button>
               </div>
             </div>
           )}
