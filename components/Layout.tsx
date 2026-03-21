@@ -79,17 +79,25 @@ export default function Layout({ title, children }: any) {
           <header className="bg-white shadow-sm">
             <div className="px-4 sm:px-6 lg:px-8">
               <div className="flex items-center justify-between h-16">
-                <div className="flex items-center">
+                <div className="flex items-center gap-3">
                   <h2 className="text-lg font-medium text-gray-900">
                     {navigation.find((item) => item.href === router.pathname)?.name || title}
                   </h2>
                 </div>
-                <Link 
-                  href="/logout" 
-                  className="px-3 py-2 rounded-md text-sm font-medium text-red-600 hover:bg-red-50 transition-colors duration-200"
-                >
-                  خروج
-                </Link>
+                <div className="flex items-center gap-2">
+                  <Link
+                    href="/admin/control-room"
+                    className="px-3 py-2 rounded-md text-sm font-medium text-indigo-600 hover:bg-indigo-50 transition-colors duration-200"
+                  >
+                    غرفة المعالجة
+                  </Link>
+                  <Link
+                    href="/logout"
+                    className="px-3 py-2 rounded-md text-sm font-medium text-red-600 hover:bg-red-50 transition-colors duration-200"
+                  >
+                    خروج
+                  </Link>
+                </div>
               </div>
             </div>
           </header>

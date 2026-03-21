@@ -1,15 +1,35 @@
-'use client';
+"use client";
 
-import { useRouter } from 'next/router';
-import { useState } from 'react';
-import supabase from '../utils/supabaseClient'; // ✅ تعديل المسار هنا
-import Layout from '../components/Layout';
+import { useRouter } from "next/router";
+import { useEffect, useState } from "react";
+import supabase from "../utils/supabaseClient";
 
+/**
+ * دخول Supabase القديم — غير رسمي.
+ * بدون ?legacy=1 يتم التوجيه إلى /auth/login.
+ * مع ?legacy=1 تبقى النموذج للطوارئ/التشغيل اليدوي.
+ */
 export default function LoginPage() {
   const router = useRouter();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [errorMsg, setErrorMsg] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [errorMsg, setErrorMsg] = useState("");
+  const legacy = router.query.legacy === "1";
+
+  useEffect(() => {
+    if (!router.isReady) return;
+    if (!legacy) {
+      router.replace("/auth/login");
+    }
+  }, [router, legacy]);
+
+  if (!router.isReady || !legacy) {
+    return (
+      <div className="flex justify-center items-center min-h-screen bg-gray-100 text-gray-500 text-sm px-6 text-center">
+        جاري التوجيه إلى بوابة الدخول الرسمية (/auth/login)...
+      </div>
+    );
+  }
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -20,24 +40,22 @@ export default function LoginPage() {
     });
 
     if (error || !data.user) {
-      setErrorMsg('فشل الدخول. تحقق من البيانات.');
+      setErrorMsg("فشل الدخول. تحقق من البيانات.");
       return;
     }
 
-    // تحقق من وجود المستخدم في جدول admins
     const { data: adminData, error: adminError } = await supabase
-      .from('admins')
-      .select('*')
-      .eq('email', email)
+      .from("admins")
+      .select("*")
+      .eq("email", email)
       .single();
 
     if (adminError || !adminData) {
-      setErrorMsg('ليست لديك صلاحية الدخول كمشرف.');
+      setErrorMsg("ليست لديك صلاحية الدخول كمشرف.");
       return;
     }
 
-    // تخزين بيانات الدخول في localStorage أو context (اختياري)
-    router.push('/dashboard');
+    router.push("/dashboard");
   };
 
   return (
@@ -46,7 +64,14 @@ export default function LoginPage() {
         onSubmit={handleLogin}
         className="bg-white p-8 rounded-lg shadow-md w-full max-w-sm text-center"
       >
-        <h2 className="text-2xl font-bold mb-6">دخول المشرفين</h2>
+        <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-md p-2 mb-4">
+          وضع legacy (?legacy=1) — للطوارئ فقط. استخدم{" "}
+          <a href="/auth/login" className="underline font-medium">
+            /auth/login
+          </a>{" "}
+          كمسار رسمي.
+        </p>
+        <h2 className="text-2xl font-bold mb-6">دخول المشرفين (Supabase)</h2>
 
         {errorMsg && <p className="text-red-500 mb-4">{errorMsg}</p>}
 
