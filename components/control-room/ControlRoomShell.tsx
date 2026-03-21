@@ -2,11 +2,12 @@ import Link from "next/link";
 import {
   LayoutGrid,
   ClipboardList,
-  UserCog,
   Building2,
   BarChart2,
+  ExternalLink,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { useApprovalCapabilities } from "@/hooks/useApprovalCapabilities";
 
 const mainFrontendBase =
   (typeof process !== "undefined" &&
@@ -18,9 +19,9 @@ export default function ControlRoomShell({
 }: {
   children: React.ReactNode;
 }) {
-  const { isSuperAdmin, isAdmin, isModerator, isProgrammer, logout } =
-    useAuth();
+  const { isAdmin, isModerator, isProgrammer, logout } = useAuth();
   const isStaff = isAdmin || isModerator || isProgrammer;
+  const { caps } = useApprovalCapabilities();
 
   const handleLogout = async () => {
     await logout({ redirectToLogin: true });
@@ -55,15 +56,24 @@ export default function ControlRoomShell({
             <ClipboardList className="w-4 h-4" />
             طابور الموافقات
           </Link>
-          {isSuperAdmin ? (
-            <Link
-              href="/admin/control-room/approval-group"
+          {caps?.can_manage_group ? (
+            <a
+              href={`${mainFrontendBase}/admin`}
+              target="_blank"
+              rel="noopener noreferrer"
               className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm border border-blue-200 bg-blue-50 hover:bg-blue-100 transition text-blue-900"
             >
-              <UserCog className="w-4 h-4" />
-              مجموعة الموافقات
+              <ExternalLink className="w-4 h-4" />
+              إدارة المجموعة في DASM
+            </a>
+          ) : (
+            <Link
+              href="/admin/control-room/approval-group"
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm border border-gray-200 hover:bg-gray-100 transition text-gray-700"
+            >
+              عن مجموعة الموافقات
             </Link>
-          ) : null}
+          )}
           {isStaff ? (
             <Link
               href="/dashboard"
