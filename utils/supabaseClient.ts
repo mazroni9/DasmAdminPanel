@@ -1,74 +1,35 @@
-import { createClient } from '@supabase/supabase-js'
+// utils/supabaseClient.ts
+// ملف قديم (Legacy). لوحة التحكم تعتمد على Laravel API فقط.
+// هذا Stub لمنع أي Requests خارجية في حال وجود استيراد قديم بالخطأ.
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://your-project.supabase.co'
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'your-anon-key'
+type AnyObj = any;
 
-if (!supabaseUrl || !supabaseAnonKey || supabaseUrl === 'https://your-project.supabase.co' || supabaseAnonKey === 'your-anon-key') {
-  console.warn('Supabase environment variables not configured. Using mock data.')
+function rejected(message: string) {
+  return Promise.resolve({ data: null, error: new Error(message) });
 }
 
-const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+function makeQueryStub() {
+  const stub: AnyObj = {
+    select: () => rejected('This module is disabled.'),
+    insert: () => rejected('This module is disabled.'),
+    update: () => rejected('This module is disabled.'),
+    delete: () => rejected('This module is disabled.'),
+    single: () => rejected('This module is disabled.'),
+    eq: () => stub,
+    in: () => stub,
+    order: () => stub,
+    limit: () => stub,
+  };
+  return stub;
+}
+
+const supabase: AnyObj = {
   auth: {
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: true
+    signInWithPassword: async () => rejected('This module is disabled.'),
+    signOut: async () => Promise.resolve({ error: null }),
+    getSession: async () => Promise.resolve({ data: { session: null }, error: null }),
   },
-  global: {
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  }
-})
+  from: () => makeQueryStub(),
+};
 
-// إضافة دالة للتحقق من حالة الاتصال
-export const checkSupabaseConnection = async () => {
-  try {
-    // إذا كانت متغيرات البيئة غير موجودة، نعيد بيانات محاكاة
-    if (!supabaseUrl || !supabaseAnonKey || supabaseUrl === 'https://your-project.supabase.co' || supabaseAnonKey === 'your-anon-key') {
-      return {
-        success: true,
-        data: [{ id: 1, name: 'Mock User' }],
-        message: 'Using mock data - Supabase not configured'
-      }
-    }
-
-    // اختبار الاتصال بطريقة أبسط
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .limit(1)
-    
-    if (error) {
-      console.error('Supabase connection error:', error)
-      return {
-        success: false,
-        error: {
-          message: error.message,
-          details: error.details,
-          hint: error.hint,
-          code: error.code
-        }
-      }
-    }
-    
-    return {
-      success: true,
-      data: data,
-      message: 'Connection successful'
-    }
-  } catch (error: any) {
-    console.error('Supabase connection error:', error)
-    return {
-      success: false,
-      error: {
-        message: error.message || 'Unknown error',
-        details: error.stack || '',
-        hint: 'Check your internet connection and Supabase configuration',
-        code: 'NETWORK_ERROR'
-      }
-    }
-  }
-}
-
-export default supabase
-
+export default supabase;
