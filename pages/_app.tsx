@@ -1,5 +1,43 @@
-import '../styles/globals.css'
+import { useEffect, type ReactNode } from "react";
+import type { AppProps } from "next/app";
+import { Toaster } from "react-hot-toast";
+import { usePlatformAuthStore } from "@/store/platformAuthStore";
+import platformApi from "@/lib/platformApi";
+import "../styles/globals.css";
 
-export default function App({ Component, pageProps }: any) {
-  return <Component {...pageProps} />
+function PlatformAuthHydration({ children }: { children: ReactNode }) {
+  useEffect(() => {
+    const finish = () => {
+      const st = usePlatformAuthStore.getState();
+      st.setHydrated(true);
+      const t =
+        st.token ||
+        (typeof window !== "undefined" ? localStorage.getItem("token") : null);
+      if (t && typeof window !== "undefined") {
+        localStorage.setItem("token", t);
+        platformApi.defaults.headers.common.Authorization = `Bearer ${t}`;
+        usePlatformAuthStore.setState({ token: t, isLoggedIn: true });
+      }
+      void usePlatformAuthStore.getState().initializeFromStorage();
+    };
+    const unsub = usePlatformAuthStore.persist.onFinishHydration(finish);
+    if (
+      typeof usePlatformAuthStore.persist.hasHydrated === "function" &&
+      usePlatformAuthStore.persist.hasHydrated()
+    ) {
+      finish();
+    }
+    return unsub;
+  }, []);
+
+  return <>{children}</>;
+}
+
+export default function App({ Component, pageProps }: AppProps) {
+  return (
+    <PlatformAuthHydration>
+      <Component {...pageProps} />
+      <Toaster position="top-center" />
+    </PlatformAuthHydration>
+  );
 }

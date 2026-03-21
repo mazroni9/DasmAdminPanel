@@ -2,6 +2,13 @@
 
 ## 🚀 لوحة تحكم إدارة DASM
 
+### الأمان والمراجع (إلزامي للمطورين)
+
+- **المرجع الأمني والتشغيلي:** [docs/security/DASM_ADMIN_PANEL_SECURITY_BASELINE.md](docs/security/DASM_ADMIN_PANEL_SECURITY_BASELINE.md)
+- **قاعدة Cursor (تُطبَّق تلقائيًا):** [.cursor/rules/dasm-admin-panel-security-baseline.mdc](.cursor/rules/dasm-admin-panel-security-baseline.mdc) — تقرأ الوثيقة أعلاه قبل أي تعديل يمس المسارات أو المصادقة أو `pages/api` أو البيئة.
+
+**مسارات الكنترول روم الرسمية:** الدخول `/auth/login` → الواجهة `/admin/control-room`. مسارات `/dashboard` و`/login` تُعامل كـ legacy حتى إعادة هيكلتها (انظر الوثيقة).
+
 ### المميزات:
 - إدارة السيارات والمزادات
 - نظام البث المباشر
