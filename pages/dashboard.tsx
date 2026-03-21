@@ -11,6 +11,7 @@ import {
   ClockIcon,
 } from '@heroicons/react/24/outline';
 import type { ReactNode } from 'react';
+import AdminDashboardGate from '@/components/admin/AdminDashboardGate';
 
 type ApiDashboardResponse = {
   success: boolean;
@@ -89,7 +90,7 @@ type ApiDashboardResponse = {
   };
 };
 
-export default function Dashboard() {
+function DashboardContent() {
   const [loading, setLoading] = useState(true);
   const [d, setD] = useState<ApiDashboardResponse['data'] | null>(null);
   const [err, setErr] = useState('');
@@ -338,6 +339,14 @@ export default function Dashboard() {
         </div>
       </div>
     </Layout>
+  );
+}
+
+export default function Dashboard() {
+  return (
+    <AdminDashboardGate>
+      <DashboardContent />
+    </AdminDashboardGate>
   );
 }
 

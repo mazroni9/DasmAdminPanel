@@ -17,7 +17,6 @@ import {
   MegaphoneIcon,
   BellIcon,
   Bars3Icon,
-  XMarkIcon,
   ChevronLeftIcon,
 } from '@heroicons/react/24/outline';
 
@@ -57,8 +56,8 @@ export default function Layout({ title, children }: any) {
   const userName = getUserDisplayName(user);
 
   useEffect(() => {
-    const isLoginPage = router.pathname === '/login';
-    if (isLoginPage) {
+    const path = router.pathname;
+    if (path === '/login' || path === '/auth/login') {
       setReady(true);
       return;
     }
@@ -66,16 +65,25 @@ export default function Layout({ title, children }: any) {
     const s = getSession();
     const u = getUser();
 
+    // جلسة المنصة (JWT) لصفحة /dashboard بعد /auth/login — AdminDashboardGate يتحقق من الصلاحية
+    if (path === '/dashboard' && typeof window !== 'undefined') {
+      const platformToken = localStorage.getItem('token');
+      if (platformToken) {
+        setReady(true);
+        return;
+      }
+    }
+
     if (!s || !u || isExpired(s)) {
       clearSession();
-      router.replace(`/login?next=${encodeURIComponent(router.asPath)}`);
+      router.replace(`/auth/login?returnUrl=${encodeURIComponent(router.asPath)}`);
       return;
     }
 
     const userType = (u.type || '').toLowerCase();
     if (userType !== 'super_admin') {
       clearSession();
-      router.replace(`/login?next=${encodeURIComponent(router.asPath)}`);
+      router.replace(`/auth/login?returnUrl=${encodeURIComponent(router.asPath)}`);
       return;
     }
 
@@ -181,12 +189,10 @@ export default function Layout({ title, children }: any) {
       </Head>
 
       <div className="h-screen flex">
-        {/* Desktop Sidebar */}
         <div className={`hidden md:block ${collapsed ? 'w-20' : 'w-72'} transition-all duration-200`}>
           {SidebarContent}
         </div>
 
-        {/* Mobile Drawer */}
         {mobileOpen && (
           <div className="fixed inset-0 z-50 md:hidden">
             <div className="absolute inset-0 bg-black/30" onClick={() => setMobileOpen(false)} />
@@ -196,9 +202,7 @@ export default function Layout({ title, children }: any) {
           </div>
         )}
 
-        {/* Main */}
         <div className="flex-1 flex flex-col overflow-hidden">
-          {/* Topbar */}
           <header className="bg-white border-b border-gray-100">
             <div className="h-16 px-4 sm:px-6 flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -216,7 +220,7 @@ export default function Layout({ title, children }: any) {
                 </div>
               </div>
 
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 sm:gap-3 flex-wrap justify-end">
                 <div className="hidden sm:flex items-center gap-2 rounded-2xl bg-gray-50 border border-gray-100 px-3 py-2">
                   <div className="h-8 w-8 rounded-xl bg-indigo-100 flex items-center justify-center">
                     <span className="text-indigo-700 font-bold">
@@ -230,8 +234,15 @@ export default function Layout({ title, children }: any) {
                 </div>
 
                 <Link
+                  href="/admin/control-room"
+                  className="inline-flex items-center gap-2 rounded-2xl px-3 sm:px-4 py-2 text-sm font-semibold text-indigo-600 hover:bg-indigo-50 transition"
+                >
+                  غرفة المعالجة
+                </Link>
+
+                <Link
                   href="/logout"
-                  className="inline-flex items-center gap-2 rounded-2xl px-4 py-2 text-sm font-semibold text-red-600 hover:bg-red-50 transition"
+                  className="inline-flex items-center gap-2 rounded-2xl px-3 sm:px-4 py-2 text-sm font-semibold text-red-600 hover:bg-red-50 transition"
                 >
                   خروج
                 </Link>

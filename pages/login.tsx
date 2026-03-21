@@ -1,7 +1,8 @@
 import { useRouter } from 'next/router';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { apiFetch } from '../utils/api';
 import { clearSession, setSession } from '../utils/authStorage';
+import supabase from '../utils/supabaseClient';
 
 type LoginResponse = {
   access_token: string;
@@ -18,16 +19,130 @@ type LoginResponse = {
   };
 };
 
+/**
+ * غير رسمي: الافتراضي يعيد التوجيه إلى /auth/login.
+ * ?legacy=1 — دخول Supabase (طوارئ)
+ * ?legacy=session — دخول الجلسة عبر API (super_admin + authStorage)
+ */
 export default function LoginPage() {
   const router = useRouter();
+  const rawLegacy = router.query.legacy;
+  const legacyMode = rawLegacy === '1' || rawLegacy === 'session';
+
   const nextPath = useMemo(() => {
     const n = router.query.next;
-    return typeof n === 'string' && n.startsWith('/') ? n : '/dashboard';
+    return typeof n === 'string' && n.startsWith('/') ? n : '/admin/control-room';
   }, [router.query.next]);
 
+  useEffect(() => {
+    if (!router.isReady) return;
+    if (legacyMode) return;
+    const next = router.query.next;
+    const qs = new URLSearchParams();
+    if (typeof next === 'string' && next.startsWith('/')) {
+      qs.set('returnUrl', next);
+    }
+    const q = qs.toString();
+    router.replace(`/auth/login${q ? `?${q}` : ''}`);
+  }, [router, legacyMode]);
+
+  if (!router.isReady || !legacyMode) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-100 text-gray-500 text-sm px-6 text-center">
+        جاري التوجيه إلى بوابة الدخول الرسمية (/auth/login)...
+      </div>
+    );
+  }
+
+  if (rawLegacy === '1') {
+    return <LegacySupabaseLogin />;
+  }
+
+  return <LegacySessionLogin nextPath={nextPath} />;
+}
+
+function LegacySupabaseLogin() {
+  const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [errorMsg, setErrorMsg] = useState('');
 
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (error || !data.user) {
+      setErrorMsg('فشل الدخول. تحقق من البيانات.');
+      return;
+    }
+
+    const { data: adminData, error: adminError } = await supabase
+      .from('admins')
+      .select('*')
+      .eq('email', email)
+      .single();
+
+    if (adminError || !adminData) {
+      setErrorMsg('ليست لديك صلاحية الدخول كمشرف.');
+      return;
+    }
+
+    router.push('/dashboard');
+  };
+
+  return (
+    <div className="flex justify-center items-center min-h-screen bg-gray-100">
+      <form
+        onSubmit={handleLogin}
+        className="bg-white p-8 rounded-lg shadow-md w-full max-w-sm text-center"
+      >
+        <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-md p-2 mb-4">
+          وضع legacy (?legacy=1) — للطوارئ. المسار الرسمي:{' '}
+          <a href="/auth/login" className="underline font-medium">
+            /auth/login
+          </a>
+        </p>
+        <h2 className="text-2xl font-bold mb-6">دخول المشرفين (Supabase)</h2>
+
+        {errorMsg && <p className="text-red-500 mb-4">{errorMsg}</p>}
+
+        <input
+          type="email"
+          placeholder="الإيميل"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          className="w-full mb-4 p-2 border rounded"
+          required
+        />
+
+        <input
+          type="password"
+          placeholder="كلمة المرور"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          className="w-full mb-6 p-2 border rounded"
+          required
+        />
+
+        <button
+          type="submit"
+          className="bg-blue-600 text-white w-full py-2 rounded hover:bg-blue-700 transition"
+        >
+          دخول
+        </button>
+      </form>
+    </div>
+  );
+}
+
+function LegacySessionLogin({ nextPath }: { nextPath: string }) {
+  const router = useRouter();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -37,7 +152,6 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      // علشان لو فيه توكن قديم متخزن مايتبعتش في طلب الـ login
       clearSession();
 
       const data = await apiFetch<LoginResponse>('/login', {
@@ -70,7 +184,9 @@ export default function LoginPage() {
 
   return (
     <div dir="rtl" className="min-h-screen bg-[#0B1220] relative overflow-hidden">
-      {/* Background glow */}
+      <p className="absolute top-3 left-3 right-3 z-10 text-center text-xs text-amber-200/90 bg-amber-900/40 border border-amber-500/30 rounded-xl px-3 py-2">
+        وضع legacy (?legacy=session). المسار الرسمي: /auth/login
+      </p>
       <div className="absolute -top-40 -right-40 h-96 w-96 rounded-full bg-indigo-600/30 blur-3xl" />
       <div className="absolute -bottom-40 -left-40 h-96 w-96 rounded-full bg-sky-500/20 blur-3xl" />
 
@@ -98,12 +214,8 @@ export default function LoginPage() {
                 </div>
               </div>
 
-              <h1 className="mt-4 text-center text-2xl font-extrabold text-white">
-                تسجيل الدخول
-              </h1>
-              <p className="mt-2 text-center text-sm text-white/60">
-                أدخل بياناتك للمتابعة إلى لوحة التحكم
-              </p>
+              <h1 className="mt-4 text-center text-2xl font-extrabold text-white">تسجيل الدخول</h1>
+              <p className="mt-2 text-center text-sm text-white/60">أدخل بياناتك للمتابعة إلى لوحة التحكم</p>
 
               {errorMsg && (
                 <div className="mt-5 rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
@@ -113,9 +225,7 @@ export default function LoginPage() {
 
               <form onSubmit={handleLogin} className="mt-6 space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-white/80 mb-2">
-                    الإيميل
-                  </label>
+                  <label className="block text-sm font-medium text-white/80 mb-2">الإيميل</label>
                   <input
                     type="email"
                     value={email}
@@ -128,9 +238,7 @@ export default function LoginPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-white/80 mb-2">
-                    كلمة المرور
-                  </label>
+                  <label className="block text-sm font-medium text-white/80 mb-2">كلمة المرور</label>
                   <input
                     type="password"
                     value={password}
@@ -151,9 +259,7 @@ export default function LoginPage() {
                 </button>
               </form>
 
-              <div className="mt-6 text-center text-xs text-white/40">
-                © {new Date().getFullYear()} DASM
-              </div>
+              <div className="mt-6 text-center text-xs text-white/40">© {new Date().getFullYear()} DASM</div>
             </div>
           </div>
 
