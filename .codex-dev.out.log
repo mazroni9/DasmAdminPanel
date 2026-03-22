@@ -1,0 +1,11 @@
+
+> DasmAdminPanel@1.0.0 dev
+> next dev --hostname 127.0.0.1
+
+- ready started server on 127.0.0.1:3000, url: http://127.0.0.1:3000
+- [36minfo[39m Loaded env from D:\dasm control panel\DasmAdminPanel\.env.local
+- [35mevent[39m compiled client and server successfully in 298 ms (18 modules)
+- [36mwait[39m compiling...
+- [35mevent[39m compiled client and server successfully in 187 ms (18 modules)
+- [36mwait[39m compiling /auth/login (client and server)...
+- [35mevent[39m compiled client and server successfully in 3.5s (293 modules)
