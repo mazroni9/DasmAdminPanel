@@ -17,7 +17,6 @@
     "silent": false,
     "autoJobCancelation": true
   },
-  "regions": ["dxb1"],
   "headers": [
     {
       "source": "/(.*)",
