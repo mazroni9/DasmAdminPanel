@@ -283,7 +283,9 @@ export default function CarManagement() {
   useEffect(() => {
     const token = getToken();
     if (!token) {
-      router.replace('/login');
+      router.replace(
+        `/auth/login?returnUrl=${encodeURIComponent(router.asPath)}`
+      );
       return;
     }
     loadCars({ page: 1 });

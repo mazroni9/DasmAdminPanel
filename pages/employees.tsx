@@ -246,7 +246,9 @@ export default function Employees() {
   useEffect(() => {
     const token = getToken();
     if (!token) {
-      router.replace('/login');
+      router.replace(
+        `/auth/login?returnUrl=${encodeURIComponent(router.asPath)}`
+      );
       return;
     }
     loadEmployees(1);
