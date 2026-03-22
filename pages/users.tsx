@@ -164,7 +164,9 @@ export default function Users() {
   useEffect(() => {
     const token = getToken();
     if (!token) {
-      router.replace('/login');
+      router.replace(
+        `/auth/login?returnUrl=${encodeURIComponent(router.asPath)}`
+      );
       return;
     }
     loadUsers(1, '', perPage);
