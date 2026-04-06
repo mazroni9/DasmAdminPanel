@@ -16,6 +16,14 @@ import {
   LogOut,
   Zap,
   Shield,
+  Car,
+  Gavel,
+  Tv2,
+  Bell,
+  UserCog,
+  Settings,
+  BarChart2,
+  Youtube,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import type { ControlRoomAccessLevel } from "./ControlRoomGate";
@@ -61,6 +69,31 @@ const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
     title: "المستخدمون",
     items: [
       { href: "/admin/control-room/users", label: "المستخدمون", icon: Users, fullOnly: true },
+    ],
+  },
+  {
+    title: "السيارات والمزادات",
+    items: [
+      { href: "/cars", label: "السيارات", icon: Car, fullOnly: true },
+      { href: "/car-management", label: "إدارة السيارات", icon: Car, fullOnly: true },
+      { href: "/auctions", label: "المزادات", icon: Gavel, fullOnly: true },
+    ],
+  },
+  {
+    title: "البث المباشر",
+    items: [
+      { href: "/live-stream", label: "إدارة البث", icon: Tv2, fullOnly: true },
+      { href: "/youtube-channels", label: "قنوات يوتيوب", icon: Youtube, fullOnly: true },
+      { href: "/buyer-notifications", label: "إشعارات المشترين", icon: Bell, fullOnly: true },
+    ],
+  },
+  {
+    title: "الإدارة",
+    items: [
+      { href: "/employees", label: "الموظفون", icon: UserCog, fullOnly: true },
+      { href: "/users", label: "المستخدمون", icon: Users, fullOnly: true },
+      { href: "/reports", label: "التقارير", icon: BarChart2, fullOnly: true },
+      { href: "/settings", label: "الإعدادات", icon: Settings, fullOnly: true },
     ],
   },
 ];
