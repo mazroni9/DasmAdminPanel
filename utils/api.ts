@@ -24,7 +24,12 @@ const TOKEN_KEY = 'dasm_admin_token';
 export function getToken(): string | null {
   if (typeof window === 'undefined') return null;
   try {
-    return localStorage.getItem(TOKEN_KEY);
+    // platformAuthStore يكتب في 'token' — نعطيه الأولوية
+    return (
+      localStorage.getItem('token') ||
+      localStorage.getItem(TOKEN_KEY) ||
+      null
+    );
   } catch {
     return null;
   }
