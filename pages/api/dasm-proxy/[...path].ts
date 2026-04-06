@@ -46,6 +46,14 @@ function isPathAllowed(subPath: string, method: string): boolean {
   if (subPath.startsWith("admin/ecommerce")) return true;
   if (subPath.startsWith("admin/stores")) return true;
 
+  // متاجر داسم الجديدة (Storefront SaaS)
+  if (subPath.startsWith("stores/public")) return method === "GET";
+  if (subPath.startsWith("stores/my-store")) return true;
+
+  // الشحن والفحص — مراقبة
+  if (subPath.startsWith("admin/shipments")) return method === "GET";
+  if (subPath.startsWith("admin/inspections")) return method === "GET";
+
   // التنبيهات الذكية والتقارير
   if (subPath.startsWith("admin/alerts")) return true;
   if (subPath.startsWith("admin/reports") && method === "GET") return true;

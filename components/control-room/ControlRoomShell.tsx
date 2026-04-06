@@ -38,8 +38,9 @@ interface NavItem {
 
 const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
   {
-    title: "الرئيسية",
+    title: "القيادة المركزية",
     items: [
+      { href: "/admin/control-room/command-center", label: "مركز القيادة", icon: Shield },
       { href: "/admin/control-room", label: "لوحة المراقبة", icon: LayoutGrid },
       { href: "/admin/control-room/monitoring", label: "المراقبة الحية", icon: Radio },
     ],
