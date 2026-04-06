@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
 import { ShoppingBag, Store, Package, TrendingUp, Search, RefreshCw, ExternalLink } from "lucide-react";
-import dasmBff from "@/lib/dasmBffClient";
 import ControlRoomGate, { type ControlRoomAccessLevel } from "@/components/control-room/ControlRoomGate";
 import ControlRoomShell from "@/components/control-room/ControlRoomShell";
 
@@ -41,24 +40,22 @@ function EcommerceBody({ access }: { access: ControlRoomAccessLevel }) {
     setLoading(true);
     try {
       const [storesRes, statsRes] = await Promise.allSettled([
-        dasmBff.get("admin/stores"),
-        dasmBff.get("admin/ecommerce/stats"),
+        fetch(`/api/stores/list?status=${statusFilter}&search=${search}`).then((r) => r.json()),
+        fetch("/api/stores/stats").then((r) => r.json()),
       ]);
 
-      if (storesRes.status === "fulfilled") {
-        const d = storesRes.value.data?.data ?? storesRes.value.data ?? [];
-        setStores(Array.isArray(d) ? d : d.stores ?? []);
+      if (storesRes.status === "fulfilled" && storesRes.value.success) {
+        setStores(storesRes.value.data ?? []);
       }
-      if (statsRes.status === "fulfilled") {
-        const d = statsRes.value.data?.data ?? statsRes.value.data ?? {};
-        setStats(d);
+      if (statsRes.status === "fulfilled" && statsRes.value.success) {
+        setStats(statsRes.value.data);
       }
     } catch {
       // keep existing state
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [statusFilter, search]);
 
   useEffect(() => { void fetchData(); }, [fetchData]);
 
@@ -71,22 +68,19 @@ function EcommerceBody({ access }: { access: ControlRoomAccessLevel }) {
     return matchSearch && matchStatus;
   });
 
-  const handleSuspend = async (storeId: number) => {
-    if (!confirm("هل تريد تعليق هذا المتجر؟")) return;
+  const handleAction = async (storeId: number, action: "suspend" | "activate" | "approve") => {
+    const labels: Record<string, string> = { suspend: "تعليق", activate: "تفعيل", approve: "قبول" };
+    if (action === "suspend" && !confirm("هل تريد تعليق هذا المتجر؟")) return;
     try {
-      await dasmBff.post(`admin/stores/${storeId}/suspend`, {});
+      const res = await fetch("/api/stores/action", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ storeId, action }),
+      }).then((r) => r.json());
+      if (!res.success) throw new Error(res.message);
       void fetchData();
     } catch {
-      alert("فشل تعليق المتجر");
-    }
-  };
-
-  const handleActivate = async (storeId: number) => {
-    try {
-      await dasmBff.post(`admin/stores/${storeId}/activate`, {});
-      void fetchData();
-    } catch {
-      alert("فشل تفعيل المتجر");
+      alert(`فشل ${labels[action]} المتجر`);
     }
   };
 
@@ -210,23 +204,24 @@ function EcommerceBody({ access }: { access: ControlRoomAccessLevel }) {
                       {access === "full" && (
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
-                            {store.status === "active" ? (
-                              <button
-                                type="button"
-                                onClick={() => handleSuspend(store.id)}
-                                className="text-xs px-2 py-1 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 transition"
-                              >
+                            {store.status === "active" && (
+                              <button type="button" onClick={() => handleAction(store.id, "suspend")}
+                                className="text-xs px-2 py-1 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 transition">
                                 تعليق
                               </button>
-                            ) : store.status === "suspended" ? (
-                              <button
-                                type="button"
-                                onClick={() => handleActivate(store.id)}
-                                className="text-xs px-2 py-1 rounded-lg border border-green-200 text-green-600 hover:bg-green-50 transition"
-                              >
+                            )}
+                            {store.status === "suspended" && (
+                              <button type="button" onClick={() => handleAction(store.id, "activate")}
+                                className="text-xs px-2 py-1 rounded-lg border border-green-200 text-green-600 hover:bg-green-50 transition">
                                 تفعيل
                               </button>
-                            ) : null}
+                            )}
+                            {store.status === "pending" && (
+                              <button type="button" onClick={() => handleAction(store.id, "approve")}
+                                className="text-xs px-2 py-1 rounded-lg border border-blue-200 text-blue-600 hover:bg-blue-50 transition">
+                                قبول
+                              </button>
+                            )}
                             <button
                               type="button"
                               className="text-xs px-2 py-1 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 transition flex items-center gap-1"
