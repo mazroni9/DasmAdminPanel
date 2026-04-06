@@ -8,37 +8,21 @@ export default function ApprovalRequestDetailPage() {
   const raw = router.query.id;
   const id = typeof raw === "string" ? Number.parseInt(raw, 10) : NaN;
 
-  if (!router.isReady) {
-    return (
-      <ControlRoomGate>
-        <ControlRoomShell>
-          <div className="container mx-auto p-4 md:p-6 rtl max-w-7xl">
-            <p className="text-gray-500 text-sm">جاري التحميل...</p>
-          </div>
-        </ControlRoomShell>
-      </ControlRoomGate>
-    );
-  }
-
-  if (!Number.isFinite(id) || id < 1) {
-    return (
-      <ControlRoomGate>
-        <ControlRoomShell>
-          <div className="container mx-auto p-4 md:p-6 rtl max-w-7xl">
-            <p className="text-red-600 text-sm">معرّف الطلب غير صالح.</p>
-          </div>
-        </ControlRoomShell>
-      </ControlRoomGate>
-    );
-  }
-
   return (
     <ControlRoomGate>
-      <ControlRoomShell>
-        <div className="container mx-auto p-4 md:p-6 rtl max-w-7xl">
-          <ApprovalRequestDetail id={id} />
-        </div>
-      </ControlRoomShell>
+      {(access) => (
+        <ControlRoomShell access={access}>
+          <div className="max-w-7xl">
+            {!router.isReady ? (
+              <p className="text-gray-500 text-sm">جاري التحميل...</p>
+            ) : !Number.isFinite(id) || id < 1 ? (
+              <p className="text-red-600 text-sm">معرّف الطلب غير صالح.</p>
+            ) : (
+              <ApprovalRequestDetail id={id} />
+            )}
+          </div>
+        </ControlRoomShell>
+      )}
     </ControlRoomGate>
   );
 }

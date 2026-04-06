@@ -15,16 +15,48 @@ function baseUrl(): string | null {
 }
 
 /**
- * السماح فقط بمسارات الموافقات عبر الـ proxy (تقليل سطح الهجوم).
- * approval-group: قراءة فقط (GET) — الإدارة تبقى في DASM.
+ * قائمة المسارات المسموح بها عبر BFF proxy.
+ * مبدأ: أقل الصلاحيات — نفتح فقط ما يحتاجه الكنترول روم.
  */
 function isPathAllowed(subPath: string, method: string): boolean {
-  if (subPath.startsWith("admin/approval-requests")) {
-    return true;
-  }
-  if (subPath.startsWith("admin/approval-group")) {
-    return method === "GET";
-  }
+  // الموافقات (القديمة)
+  if (subPath.startsWith("admin/approval-requests")) return true;
+  if (subPath.startsWith("admin/approval-group")) return method === "GET";
+
+  // السيارات المعلقة + الإدارة
+  if (subPath.startsWith("admin/cars")) return true;
+
+  // المراقبة الحية
+  if (subPath.startsWith("admin/monitoring")) return method === "GET";
+  if (subPath.startsWith("admin/live-auctions")) return method === "GET";
+  if (subPath.startsWith("admin/auctions")) return method === "GET";
+
+  // الأنشطة والسجلات (قراءة فقط)
+  if (subPath.startsWith("admin/platform-activities")) return method === "GET";
+  if (subPath.startsWith("admin/activity-logs")) return method === "GET";
+  if (subPath.startsWith("admin/audit-logs")) return method === "GET";
+
+  // المستخدمون (قراءة فقط من الكنترول روم)
+  if (subPath.startsWith("admin/users") && method === "GET") return true;
+
+  // بروفايل المستخدم الحالي
+  if (subPath === "user/profile") return method === "GET";
+
+  // المتاجر الإلكترونية
+  if (subPath.startsWith("admin/ecommerce")) return true;
+  if (subPath.startsWith("admin/stores")) return true;
+
+  // التنبيهات الذكية والتقارير
+  if (subPath.startsWith("admin/alerts")) return true;
+  if (subPath.startsWith("admin/reports") && method === "GET") return true;
+  if (subPath.startsWith("admin/analytics") && method === "GET") return true;
+
+  // اتخاذ قرارات الاعتدال
+  if (subPath.startsWith("admin/moderation")) return true;
+
+  // SSO verify (لتبادل التوكن)
+  if (subPath === "sso/verify") return method === "POST";
+
   return false;
 }
 

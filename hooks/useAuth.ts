@@ -16,13 +16,25 @@ export function useAuth() {
     initializeFromStorage,
   } = usePlatformAuthStore();
 
+  const isAdmin =
+    user?.type === UserRole.ADMIN || user?.type === UserRole.SUPER_ADMIN;
+  const isModerator = user?.type === UserRole.MODERATOR;
+  const isOperator = user?.type === UserRole.OPERATOR;
+  // طاقم الكنترول روم = أدمن + مشرف + مشغّل + مبرمج
+  const isControlRoomStaff =
+    isAdmin ||
+    isModerator ||
+    isOperator ||
+    user?.type === UserRole.PROGRAMMER;
+
   return {
     user,
-    isAdmin:
-      user?.type === UserRole.ADMIN || user?.type === UserRole.SUPER_ADMIN,
+    isAdmin,
     isSuperAdmin: user?.type === UserRole.SUPER_ADMIN,
     isProgrammer: user?.type === UserRole.PROGRAMMER,
-    isModerator: user?.type === UserRole.MODERATOR,
+    isModerator,
+    isOperator,
+    isControlRoomStaff,
     hydrated,
     initialized,
     isReady: hydrated,
