@@ -1,11 +1,6 @@
 import Link from "next/link";
 import { useApprovalCapabilities } from "@/hooks/useApprovalCapabilities";
 
-const mainBase =
-  (typeof process !== "undefined" &&
-    process.env.NEXT_PUBLIC_MAIN_FRONTEND_URL?.replace(/\/$/, "")) ||
-  "https://www.dasm.com.sa";
-
 /**
  * لا يوجد أي fetch لـ approval-group من هنا.
  * can_manage_group = true → إشعار + رابط إدارة في DASM فقط.
@@ -65,18 +60,10 @@ export default function ApprovalGroupDasmNotice() {
 
       {canManage ? (
         <div className="rounded-2xl border border-indigo-200 bg-indigo-50/90 p-4 text-sm text-indigo-950 space-y-2">
-          <p className="font-semibold">صلاحية إدارة المجموعة (من DASM)</p>
+          <p className="font-semibold">صلاحية إدارة المجموعة</p>
           <p className="text-indigo-900">
-            يمكنك فتح لوحة الإدارة في المنصة لإدارة العضوية والإعدادات:
+            تملك صلاحية إدارة العضوية وإعدادات المجموعة — تواصل مع مدير النظام لتعديل الأعضاء.
           </p>
-          <a
-            href={`${mainBase}/admin`}
-            className="inline-flex font-medium text-indigo-700 underline hover:text-indigo-600"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            فتح DASM — الإدارة
-          </a>
         </div>
       ) : (
         <div className="rounded-2xl border border-gray-200 bg-white p-4 text-sm text-gray-600 space-y-2">

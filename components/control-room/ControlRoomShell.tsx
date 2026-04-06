@@ -13,18 +13,12 @@ import {
   ChevronLeft,
   Menu,
   X,
-  ExternalLink,
   LogOut,
   Zap,
   Shield,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import type { ControlRoomAccessLevel } from "./ControlRoomGate";
-
-const DASM_FRONTEND =
-  (typeof process !== "undefined" &&
-    process.env.NEXT_PUBLIC_MAIN_FRONTEND_URL?.replace(/\/$/, "")) ||
-  "https://www.dasm.com.sa";
 
 interface NavItem {
   href: string;
@@ -176,17 +170,6 @@ export default function ControlRoomShell({ children, access }: Props) {
 
       {/* الأسفل */}
       <div className="px-3 py-3 border-t border-gray-100 space-y-1">
-        {isAdmin && (
-          <a
-            href={`${DASM_FRONTEND}/admin`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm text-gray-600 hover:bg-gray-100 transition"
-          >
-            <ExternalLink className="w-4 h-4 text-gray-400" />
-            لوحة الإدارة الكاملة
-          </a>
-        )}
         <button
           type="button"
           onClick={handleLogout}
