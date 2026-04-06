@@ -1,106 +1,255 @@
+import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/router";
 import {
   LayoutGrid,
   ClipboardList,
-  Building2,
-  BarChart2,
+  Radio,
+  AlertTriangle,
+  Activity,
+  ShoppingBag,
+  FileText,
+  Users,
+  ChevronLeft,
+  Menu,
+  X,
   ExternalLink,
+  LogOut,
+  Zap,
+  Shield,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import { useApprovalCapabilities } from "@/hooks/useApprovalCapabilities";
+import type { ControlRoomAccessLevel } from "./ControlRoomGate";
 
-const mainFrontendBase =
+const DASM_FRONTEND =
   (typeof process !== "undefined" &&
     process.env.NEXT_PUBLIC_MAIN_FRONTEND_URL?.replace(/\/$/, "")) ||
   "https://www.dasm.com.sa";
 
-export default function ControlRoomShell({
-  children,
-}: {
+interface NavItem {
+  href: string;
+  label: string;
+  icon: React.ElementType;
+  badge?: string;
+  fullOnly?: boolean; // يظهر فقط لـ full access
+}
+
+const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
+  {
+    title: "الرئيسية",
+    items: [
+      { href: "/admin/control-room", label: "لوحة المراقبة", icon: LayoutGrid },
+      { href: "/admin/control-room/monitoring", label: "المراقبة الحية", icon: Radio },
+    ],
+  },
+  {
+    title: "العمليات",
+    items: [
+      { href: "/admin/control-room/approval-requests", label: "طابور الموافقات", icon: ClipboardList },
+      { href: "/admin/control-room/activities", label: "سجل الأنشطة", icon: Activity },
+      { href: "/admin/control-room/moderation", label: "الاعتدال", icon: Shield, fullOnly: true },
+    ],
+  },
+  {
+    title: "التجارة الإلكترونية",
+    items: [
+      { href: "/admin/control-room/ecommerce", label: "المتاجر والمنتجات", icon: ShoppingBag },
+    ],
+  },
+  {
+    title: "التحليل الذكي",
+    items: [
+      { href: "/admin/control-room/smart-alerts", label: "التنبيهات الذكية", icon: AlertTriangle },
+      { href: "/admin/control-room/reports", label: "التقارير", icon: FileText, fullOnly: true },
+    ],
+  },
+  {
+    title: "المستخدمون",
+    items: [
+      { href: "/admin/control-room/users", label: "المستخدمون", icon: Users, fullOnly: true },
+    ],
+  },
+];
+
+interface Props {
   children: React.ReactNode;
-}) {
-  const { isAdmin, isModerator, isProgrammer, logout } = useAuth();
-  const isStaff = isAdmin || isModerator || isProgrammer;
-  const { caps } = useApprovalCapabilities();
+  access: ControlRoomAccessLevel;
+}
+
+export default function ControlRoomShell({ children, access }: Props) {
+  const router = useRouter();
+  const { user, isAdmin, isModerator, isOperator, logout } = useAuth();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const handleLogout = async () => {
     await logout({ redirectToLogin: true });
   };
 
-  return (
-    <div className="space-y-6 rtl min-h-screen bg-gray-50 p-4 md:p-6">
-      <header className="rounded-2xl border border-gray-200 bg-white p-4 flex flex-wrap items-center gap-3 justify-between shadow-sm">
-        <div className="flex items-center gap-2 min-w-0">
-          <Building2 className="w-6 h-6 text-blue-600 shrink-0" />
+  const isActive = (href: string) =>
+    router.pathname === href || router.asPath === href;
+
+  const roleBadge = isAdmin
+    ? { label: "أدمن", color: "bg-purple-100 text-purple-700" }
+    : isModerator
+    ? { label: "مشرف", color: "bg-blue-100 text-blue-700" }
+    : isOperator
+    ? { label: "مشغّل", color: "bg-green-100 text-green-700" }
+    : { label: "مراجع", color: "bg-gray-100 text-gray-600" };
+
+  const SidebarContent = () => (
+    <div className="flex flex-col h-full">
+      {/* الشعار */}
+      <div className="px-4 py-5 border-b border-gray-100">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center shrink-0">
+            <Zap className="w-4 h-4 text-white" />
+          </div>
           <div>
-            <p className="font-bold text-lg text-gray-900">
-              غرفة المعالجة التشغيلية
-            </p>
-            <p className="text-xs text-gray-500">
-              السيارات الجديدة وطابور الموافقات التشغيلية
-            </p>
+            <p className="font-bold text-sm text-gray-900">الكنترول روم</p>
+            <p className="text-xs text-gray-400">داسم</p>
           </div>
         </div>
-        <nav className="flex flex-wrap items-center gap-2">
-          <Link
-            href="/admin/control-room"
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm border border-gray-200 hover:bg-gray-100 transition"
+      </div>
+
+      {/* المستخدم */}
+      <div className="px-4 py-3 border-b border-gray-100">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-xs font-bold text-gray-600 shrink-0">
+            {user?.first_name?.[0] ?? user?.name?.[0] ?? "U"}
+          </div>
+          <div className="min-w-0">
+            <p className="text-sm font-medium text-gray-900 truncate">
+              {user?.first_name
+                ? `${user.first_name} ${user.last_name ?? ""}`.trim()
+                : user?.name ?? user?.email}
+            </p>
+            <span className={`text-xs px-1.5 py-0.5 rounded-md font-medium ${roleBadge.color}`}>
+              {roleBadge.label}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* القائمة */}
+      <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-4">
+        {NAV_GROUPS.map((group) => {
+          const visibleItems = group.items.filter(
+            (item) => !item.fullOnly || access === "full"
+          );
+          if (visibleItems.length === 0) return null;
+          return (
+            <div key={group.title}>
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-2 mb-1">
+                {group.title}
+              </p>
+              <ul className="space-y-0.5">
+                {visibleItems.map((item) => {
+                  const Icon = item.icon;
+                  const active = isActive(item.href);
+                  return (
+                    <li key={item.href}>
+                      <Link
+                        href={item.href}
+                        onClick={() => setSidebarOpen(false)}
+                        className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm transition ${
+                          active
+                            ? "bg-blue-50 text-blue-700 font-medium"
+                            : "text-gray-700 hover:bg-gray-100"
+                        }`}
+                      >
+                        <Icon className={`w-4 h-4 shrink-0 ${active ? "text-blue-600" : "text-gray-400"}`} />
+                        {item.label}
+                        {item.badge && (
+                          <span className="mr-auto text-xs bg-red-500 text-white px-1.5 py-0.5 rounded-full">
+                            {item.badge}
+                          </span>
+                        )}
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          );
+        })}
+      </nav>
+
+      {/* الأسفل */}
+      <div className="px-3 py-3 border-t border-gray-100 space-y-1">
+        {isAdmin && (
+          <a
+            href={`${DASM_FRONTEND}/admin`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm text-gray-600 hover:bg-gray-100 transition"
           >
-            <LayoutGrid className="w-4 h-4" />
-            الرئيسية
-          </Link>
-          <Link
-            href="/admin/control-room/approval-requests"
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm border border-gray-200 hover:bg-gray-100 transition"
-          >
-            <ClipboardList className="w-4 h-4" />
-            طابور الموافقات
-          </Link>
-          {caps?.can_manage_group ? (
-            <a
-              href={`${mainFrontendBase}/admin`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm border border-blue-200 bg-blue-50 hover:bg-blue-100 transition text-blue-900"
-            >
-              <ExternalLink className="w-4 h-4" />
-              إدارة المجموعة في DASM
-            </a>
-          ) : (
-            <Link
-              href="/admin/control-room/approval-group"
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm border border-gray-200 hover:bg-gray-100 transition text-gray-700"
-            >
-              عن مجموعة الموافقات
-            </Link>
-          )}
-          {isStaff ? (
-            <Link
-              href="/dashboard"
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm border border-gray-200 hover:bg-gray-100 transition"
-            >
-              <BarChart2 className="w-4 h-4" />
-              لوحة المؤشرات
-            </Link>
-          ) : null}
-          {isStaff ? (
-            <a
-              href={`${mainFrontendBase}/admin`}
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm border border-gray-200 hover:bg-gray-100 transition"
-            >
-              لوحة الإدارة
-            </a>
-          ) : null}
-          <button
-            type="button"
-            onClick={handleLogout}
-            className="px-3 py-2 rounded-xl text-sm text-red-600 border border-red-200 hover:bg-red-50"
-          >
-            خروج
+            <ExternalLink className="w-4 h-4 text-gray-400" />
+            لوحة الإدارة الكاملة
+          </a>
+        )}
+        <button
+          type="button"
+          onClick={handleLogout}
+          className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm text-red-600 hover:bg-red-50 transition"
+        >
+          <LogOut className="w-4 h-4" />
+          تسجيل خروج
+        </button>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="min-h-screen bg-gray-50 rtl flex">
+      {/* Sidebar ديسكتوب */}
+      <aside className="hidden md:flex flex-col w-60 bg-white border-l border-gray-200 shrink-0 sticky top-0 h-screen overflow-hidden">
+        <SidebarContent />
+      </aside>
+
+      {/* Sidebar موبايل overlay */}
+      {sidebarOpen && (
+        <div className="fixed inset-0 z-40 md:hidden">
+          <div
+            className="absolute inset-0 bg-black/40"
+            onClick={() => setSidebarOpen(false)}
+          />
+          <aside className="absolute right-0 top-0 h-full w-64 bg-white shadow-xl z-50">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+              <span className="font-bold text-sm text-gray-900">القائمة</span>
+              <button type="button" onClick={() => setSidebarOpen(false)}>
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+            <SidebarContent />
+          </aside>
+        </div>
+      )}
+
+      {/* المحتوى الرئيسي */}
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* شريط علوي موبايل */}
+        <header className="md:hidden flex items-center justify-between px-4 py-3 bg-white border-b border-gray-200 sticky top-0 z-30">
+          <button type="button" onClick={() => setSidebarOpen(true)}>
+            <Menu className="w-5 h-5 text-gray-600" />
           </button>
-        </nav>
-      </header>
-      {children}
+          <span className="font-bold text-sm text-gray-900">الكنترول روم</span>
+          <div className="w-5" />
+        </header>
+
+        {/* breadcrumb */}
+        <div className="hidden md:flex items-center gap-1 px-6 py-3 text-xs text-gray-400 border-b border-gray-100 bg-white">
+          <span>الكنترول روم</span>
+          <ChevronLeft className="w-3 h-3" />
+          <span className="text-gray-600 font-medium">
+            {NAV_GROUPS.flatMap((g) => g.items).find((i) => isActive(i.href))?.label ?? "الرئيسية"}
+          </span>
+        </div>
+
+        {/* المحتوى */}
+        <main className="flex-1 p-4 md:p-6 overflow-auto">
+          {children}
+        </main>
+      </div>
     </div>
   );
 }

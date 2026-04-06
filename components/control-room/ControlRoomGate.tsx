@@ -3,44 +3,56 @@ import { useRouter } from "next/router";
 import { useAuth } from "@/hooks/useAuth";
 import dasmBff from "@/lib/dasmBffClient";
 
-type ReviewerGateState =
-  | "loading_caps"
-  | "allowed"
+type GateState =
+  | "loading"
+  | "allowed_full"   // أدمن / مشرف / مبرمج — كامل الصلاحيات
+  | "allowed_ops"    // مشغّل — صلاحيات محدودة
+  | "allowed_queue"  // مراجع خارجي يملك can_access_queue
   | "forbidden"
   | "error"
   | "redirect_login";
 
-export default function ControlRoomGate({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  const router = useRouter();
-  const { hydrated, token, isAdmin, isModerator, isProgrammer } = useAuth();
-  const isStaff = isAdmin || isModerator || isProgrammer;
+export type ControlRoomAccessLevel = "full" | "ops" | "queue";
 
-  const [reviewerState, setReviewerState] =
-    useState<ReviewerGateState>("loading_caps");
+interface ControlRoomGateProps {
+  children: (access: ControlRoomAccessLevel) => React.ReactNode;
+}
+
+export default function ControlRoomGate({ children }: ControlRoomGateProps) {
+  const router = useRouter();
+  const { hydrated, token, isAdmin, isModerator, isProgrammer, isOperator } = useAuth();
+  const isFullStaff = isAdmin || isModerator || isProgrammer;
+
+  const [gateState, setGateState] = useState<GateState>("loading");
   const [retryKey, setRetryKey] = useState(0);
 
   useEffect(() => {
     if (!hydrated) return;
 
-    if (isStaff) {
-      setReviewerState("allowed");
+    // أدمن / مشرف / مبرمج → دخول كامل
+    if (isFullStaff) {
+      setGateState("allowed_full");
       return;
     }
 
+    // مشغّل → دخول محدود
+    if (isOperator) {
+      setGateState("allowed_ops");
+      return;
+    }
+
+    // غير مسجّل → توجيه للدخول
     if (!token) {
-      setReviewerState("redirect_login");
+      setGateState("redirect_login");
       router.replace(
-        "/auth/login?returnUrl=" + encodeURIComponent("/admin/control-room")
+        "/auth/login?returnUrl=" + encodeURIComponent(router.asPath)
       );
       return;
     }
 
+    // فحص صلاحيات طابور الموافقات لبقية الأدوار
     let cancelled = false;
-    setReviewerState("loading_caps");
+    setGateState("loading");
 
     (async () => {
       try {
@@ -48,41 +60,39 @@ export default function ControlRoomGate({
         const data = res.data?.data ?? res.data;
         const ok = data?.can_access_queue === true;
         if (cancelled) return;
-        setReviewerState(ok ? "allowed" : "forbidden");
+        setGateState(ok ? "allowed_queue" : "forbidden");
       } catch (e: unknown) {
         if (cancelled) return;
-        const status = (e as { response?: { status?: number } })?.response
-          ?.status;
+        const status = (e as { response?: { status?: number } })?.response?.status;
         if (status === 401) {
-          setReviewerState("redirect_login");
+          setGateState("redirect_login");
           router.replace(
-            "/auth/login?returnUrl=" +
-              encodeURIComponent("/admin/control-room")
+            "/auth/login?returnUrl=" + encodeURIComponent(router.asPath)
           );
           return;
         }
-        setReviewerState("error");
+        setGateState("error");
       }
     })();
 
     return () => {
       cancelled = true;
     };
-  }, [hydrated, isStaff, token, router, retryKey]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hydrated, isFullStaff, isOperator, token, retryKey]);
 
-  if (!hydrated) {
+  if (!hydrated || gateState === "loading") {
     return (
       <div className="min-h-screen flex items-center justify-center text-gray-500 text-sm rtl p-6">
-        جاري تهيئة الجلسة...
+        <div className="text-center space-y-3">
+          <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto" />
+          <p>جاري التحقق من الصلاحيات...</p>
+        </div>
       </div>
     );
   }
 
-  if (isStaff) {
-    return <>{children}</>;
-  }
-
-  if (reviewerState === "redirect_login") {
+  if (gateState === "redirect_login") {
     return (
       <div className="min-h-screen flex items-center justify-center text-gray-500 text-sm rtl p-6">
         جاري التوجيه لتسجيل الدخول...
@@ -90,15 +100,7 @@ export default function ControlRoomGate({
     );
   }
 
-  if (reviewerState === "loading_caps") {
-    return (
-      <div className="min-h-screen flex items-center justify-center text-gray-500 text-sm rtl p-6">
-        جاري التحقق من صلاحيات الموافقات من DASM...
-      </div>
-    );
-  }
-
-  if (reviewerState === "error") {
+  if (gateState === "error") {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-4 rtl p-6 text-center max-w-md mx-auto">
         <p className="text-red-800 font-medium">
@@ -115,33 +117,31 @@ export default function ControlRoomGate({
     );
   }
 
-  if (reviewerState === "forbidden") {
+  if (gateState === "forbidden") {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-3 rtl p-6 text-center max-w-lg mx-auto">
+        <div className="w-14 h-14 bg-amber-100 rounded-2xl flex items-center justify-center text-2xl mx-auto">🔒</div>
         <p className="text-lg font-semibold text-amber-900">غير مصرّح</p>
         <p className="text-amber-800 text-sm leading-relaxed">
-          لا تملك صلاحية الدخول إلى غرفة المعالجة. يجب أن يمنحك DASM صلاحية
-          الطابور (
-          <code className="text-xs bg-amber-100 px-1 rounded">
-            can_access_queue
-          </code>
-          )، مثلاً عبر عضوية مجموعة الموافقات.
+          لا تملك صلاحية الدخول إلى الكنترول روم. تواصل مع مدير داسم للحصول على الوصول.
         </p>
         <button
           type="button"
-          className="mt-2 text-sm text-indigo-600 underline"
-          onClick={() =>
-            router.replace(
-              "/auth/login?returnUrl=" +
-                encodeURIComponent("/admin/control-room")
-            )
-          }
+          className="mt-2 text-sm text-blue-600 underline"
+          onClick={() => router.replace("/auth/login")}
         >
-          العودة لتسجيل الدخول بحساب آخر
+          تسجيل الدخول بحساب آخر
         </button>
       </div>
     );
   }
 
-  return <>{children}</>;
+  const access: ControlRoomAccessLevel =
+    gateState === "allowed_full"
+      ? "full"
+      : gateState === "allowed_ops"
+      ? "ops"
+      : "queue";
+
+  return <>{children(access)}</>;
 }
