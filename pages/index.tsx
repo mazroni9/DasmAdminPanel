@@ -24,7 +24,7 @@ export default function Home() {
       router.replace("/auth/login");
       return;
     }
-    router.replace("/admin/control-room");
+    router.replace("/dashboard");
   }, [hydrated, initialized, isLoggedIn, router]);
 
   return (

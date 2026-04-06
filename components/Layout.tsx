@@ -65,8 +65,8 @@ export default function Layout({ title, children }: any) {
     const s = getSession();
     const u = getUser();
 
-    // جلسة المنصة (JWT) لصفحة /dashboard بعد /auth/login — AdminDashboardGate يتحقق من الصلاحية
-    if (path === '/dashboard' && typeof window !== 'undefined') {
+    // قبول توكن platformAuthStore ('token') في كل الصفحات
+    if (typeof window !== 'undefined') {
       const platformToken = localStorage.getItem('token');
       if (platformToken) {
         setReady(true);
