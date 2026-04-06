@@ -14,7 +14,7 @@ export default function SsoCallbackPage() {
   useEffect(() => {
     if (!router.isReady) return;
 
-    const token = router.query.token as string | undefined;
+    const token = (router.query.sso_token ?? router.query.token) as string | undefined;
     const returnUrl =
       typeof router.query.returnUrl === "string"
         ? router.query.returnUrl
