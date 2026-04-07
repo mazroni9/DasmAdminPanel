@@ -25,6 +25,7 @@ import {
   Settings,
   BarChart2,
   Youtube,
+  DollarSign,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import type { ControlRoomAccessLevel } from "./ControlRoomGate";
@@ -65,6 +66,7 @@ const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
     title: "شركاء النمو",
     items: [
       { href: "/admin/control-room/growth-partners", label: "مراقبة الشركاء", icon: Handshake, fullOnly: true },
+      { href: "/admin/control-room/commission-tiers", label: "شرائح العمولات", icon: DollarSign },
     ],
   },
   {

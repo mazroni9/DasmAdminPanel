@@ -65,6 +65,14 @@ function isPathAllowed(subPath: string, method: string): boolean {
   // شركاء النمو
   if (subPath.startsWith("admin/growth-partners")) return true;
 
+  // شرائح العمولات (قراءة + حساب)
+  if (subPath.startsWith("admin/commission-tiers")) return true;
+
+  // الأدوار والصلاحيات
+  if (subPath.startsWith("admin/roles")) return method === "GET";
+  if (subPath.startsWith("admin/permissions")) return method === "GET";
+  if (subPath.startsWith("admin/staff")) return method === "GET";
+
   // SSO verify (لتبادل التوكن)
   if (subPath === "sso/verify") return method === "POST";
 
