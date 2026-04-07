@@ -1,43 +1,29 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import { createClient } from "@supabase/supabase-js";
 
-const supabase = createClient(
-  process.env.SUPABASE_SERVICES_URL!,
-  process.env.SUPABASE_SERVICES_SERVICE_KEY!
-);
-
+/**
+ * GET /api/stores/stats — إحصائيات المتاجر
+ * يمر عبر DASM API بدل Supabase المباشر (SAMA compliance).
+ */
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "GET") return res.status(405).end();
 
+  const auth = req.headers.authorization;
+  if (!auth) return res.status(401).json({ message: "يجب تسجيل الدخول" });
+
+  const base = process.env.DASM_PLATFORM_API_URL || process.env.NEXT_PUBLIC_PLATFORM_API_URL;
+  if (!base) return res.status(500).json({ message: "تكوين خادم المنصة غير مكتمل" });
+
   try {
-    const today = new Date().toISOString().split("T")[0];
-
-    const [totalRes, activeRes, pendingRes, suspendedRes, ordersRes] =
-      await Promise.all([
-        supabase.from("stores").select("id", { count: "exact", head: true }),
-        supabase.from("stores").select("id", { count: "exact", head: true }).eq("status", "active"),
-        supabase.from("stores").select("id", { count: "exact", head: true }).eq("status", "pending"),
-        supabase.from("stores").select("id", { count: "exact", head: true }).eq("status", "suspended"),
-        supabase.from("store_orders").select("id, total_amount", { count: "exact" }).gte("created_at", today),
-      ]);
-
-    const ordersToday = ordersRes.data ?? [];
-    const revenueToday = ordersToday.reduce(
-      (sum: number, o: any) => sum + Number(o.total_amount ?? 0),
-      0
-    );
-
-    return res.status(200).json({
-      success: true,
-      data: {
-        total_stores: totalRes.count ?? 0,
-        active_stores: activeRes.count ?? 0,
-        pending_stores: pendingRes.count ?? 0,
-        suspended_stores: suspendedRes.count ?? 0,
-        orders_today: ordersRes.count ?? 0,
-        revenue_today: revenueToday,
+    const response = await fetch(`${base.replace(/\/$/, "")}/api/admin/stores/stats`, {
+      method: "GET",
+      headers: {
+        "Accept": "application/json",
+        "Authorization": auth,
       },
     });
+
+    const data = await response.json();
+    return res.status(response.status).json(data);
   } catch (err: any) {
     return res.status(500).json({ success: false, message: err.message });
   }

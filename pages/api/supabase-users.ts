@@ -1,13 +1,30 @@
-import { createClient } from '@supabase/supabase-js'
-import type { NextApiRequest, NextApiResponse } from 'next'
+import type { NextApiRequest, NextApiResponse } from "next";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!  // المفتاح الإداري، ضروري
-)
-
+/**
+ * GET /api/supabase-users — قائمة المستخدمين
+ * يمر عبر DASM API بدل Supabase المباشر (SAMA compliance).
+ */
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  const { data, error } = await supabase.auth.admin.listUsers()
-  if (error) return res.status(500).json({ error: error.message })
-  res.status(200).json(data.users)
+  if (req.method !== "GET") return res.status(405).end();
+
+  const auth = req.headers.authorization;
+  if (!auth) return res.status(401).json({ message: "يجب تسجيل الدخول" });
+
+  const base = process.env.DASM_PLATFORM_API_URL || process.env.NEXT_PUBLIC_PLATFORM_API_URL;
+  if (!base) return res.status(500).json({ message: "تكوين خادم المنصة غير مكتمل" });
+
+  try {
+    const response = await fetch(`${base.replace(/\/$/, "")}/api/admin/users`, {
+      method: "GET",
+      headers: {
+        "Accept": "application/json",
+        "Authorization": auth,
+      },
+    });
+
+    const data = await response.json();
+    return res.status(response.status).json(data);
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
 }
