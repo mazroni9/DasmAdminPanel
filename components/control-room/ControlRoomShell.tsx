@@ -18,6 +18,7 @@ import {
   Shield,
   Car,
   Gavel,
+  Handshake,
   Tv2,
   Bell,
   UserCog,
@@ -58,6 +59,12 @@ const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
     items: [
       { href: "/admin/control-room/stores",    label: "مراقبة المتاجر",   icon: ShoppingBag },
       { href: "/admin/control-room/ecommerce", label: "إحصائيات المتاجر", icon: ShoppingBag },
+    ],
+  },
+  {
+    title: "شركاء النمو",
+    items: [
+      { href: "/admin/control-room/growth-partners", label: "مراقبة الشركاء", icon: Handshake, fullOnly: true },
     ],
   },
   {

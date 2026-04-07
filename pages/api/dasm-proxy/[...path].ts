@@ -62,6 +62,9 @@ function isPathAllowed(subPath: string, method: string): boolean {
   // اتخاذ قرارات الاعتدال
   if (subPath.startsWith("admin/moderation")) return true;
 
+  // شركاء النمو
+  if (subPath.startsWith("admin/growth-partners")) return true;
+
   // SSO verify (لتبادل التوكن)
   if (subPath === "sso/verify") return method === "POST";
 
