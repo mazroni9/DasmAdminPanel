@@ -110,14 +110,6 @@ const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
       { href: `${DASM_BASE}/auctions/auctions-1main`, label: "محرك المزاد الرباعي", icon: Calendar, fullOnly: true, external: true },
     ],
   },
-  // ─── المحاسبة والمالية ───
-  {
-    title: "المحاسبة والمالية",
-    items: [
-      { href: "/admin/control-room/growth-partners", label: "شركاء النمو", icon: Handshake, fullOnly: true },
-      { href: "/admin/control-room/commission-tiers", label: "شرائح العمولات", icon: DollarSign },
-    ],
-  },
   // ─── متاجر داسم ───
   {
     title: "متاجر داسم",
