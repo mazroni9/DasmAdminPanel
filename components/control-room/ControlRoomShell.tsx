@@ -90,6 +90,7 @@ const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
       { href: `${DASM_BASE}/admin/roles`, label: "إدارة الأدوار", icon: UserCog, fullOnly: true, external: true },
       { href: `${DASM_BASE}/admin/permissions`, label: "شجرة الصلاحيات", icon: Shield, fullOnly: true, external: true },
       { href: `${DASM_BASE}/admin/organizations`, label: "المنظمات", icon: Building, fullOnly: true, external: true },
+      { href: `${DASM_BASE}/admin/groups`, label: "إدارة القروبات", icon: Users, fullOnly: true, external: true },
     ],
   },
   // ─── السيارات والمزادات ───
@@ -109,6 +110,8 @@ const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
       { href: `${DASM_BASE}/admin/live-stream`, label: "إدارة البث", icon: Tv2, fullOnly: true, external: true },
       { href: `${DASM_BASE}/admin/youtube-channels`, label: "قنوات YouTube", icon: Youtube, fullOnly: true, external: true },
       { href: `${DASM_BASE}/admin/live-market-staging`, label: "تغذية الحراج المباشر", icon: Radio, fullOnly: true, external: true },
+      { href: `${DASM_BASE}/auctions/auctions-1main/live-market`, label: "الحراج المباشر", icon: Radio, fullOnly: true, external: true },
+      { href: `${DASM_BASE}/auctions/auctions-1main`, label: "محرك المزاد الرباعي", icon: Calendar, fullOnly: true, external: true },
     ],
   },
   // ─── المحاسبة والمالية ───
@@ -138,6 +141,7 @@ const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
     items: [
       { href: `${DASM_BASE}/admin/blog/posts`, label: "المقالات", icon: FileText, fullOnly: true, external: true },
       { href: `${DASM_BASE}/admin/blog/categories`, label: "تصنيفات المدونة", icon: Tags, fullOnly: true, external: true },
+      { href: `${DASM_BASE}/admin/market-council/permissions`, label: "صلاحيات مجلس السوق", icon: Shield, fullOnly: true, external: true },
       { href: `${DASM_BASE}/admin/market-council/articles`, label: "مقالات مجلس السوق", icon: FileText, fullOnly: true, external: true },
       { href: `${DASM_BASE}/admin/market-council/categories`, label: "تصنيفات المجلس", icon: Tags, fullOnly: true, external: true },
       { href: `${DASM_BASE}/admin/market-council/comments`, label: "تعليقات المجلس", icon: MessageSquare, fullOnly: true, external: true },
@@ -152,8 +156,6 @@ const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
       { href: `${DASM_BASE}/admin/activity-logs`, label: "سجلات النشاط", icon: FileText, fullOnly: true, external: true },
       { href: `${DASM_BASE}/admin/auction-activity-log`, label: "سجل المزادات الفوري", icon: ScrollText, fullOnly: true, external: true },
       { href: `${DASM_BASE}/admin/monitoring`, label: "مراقبة الإنتاج", icon: HeartPulse, fullOnly: true, external: true },
-      { href: `${DASM_BASE}/admin/auction-tests`, label: "اختبارات المزادات", icon: TestTube, fullOnly: true, external: true },
-      { href: `${DASM_BASE}/admin/auction-testing-analytics`, label: "تحليلات الاختبارات", icon: BarChart3, fullOnly: true, external: true },
     ],
   },
   // ─── التقارير والإعدادات ───
@@ -163,11 +165,7 @@ const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
       { href: "/admin/control-room/reports", label: "التقارير", icon: BarChart2, fullOnly: true },
       { href: `${DASM_BASE}/similar-price-analysis`, label: "تحليل الأسعار المشابهة", icon: BarChart3, fullOnly: true, external: true },
       { href: `${DASM_BASE}/admin/security`, label: "مركز الأمان", icon: ShieldAlert, fullOnly: true, external: true },
-      { href: `${DASM_BASE}/admin/developers`, label: "بوابة المبرمجين", icon: Code2, fullOnly: true, external: true },
-      { href: `${DASM_BASE}/admin/api-keys`, label: "مفاتيح API", icon: Key, fullOnly: true, external: true },
-      { href: `${DASM_BASE}/admin/subscription-plans`, label: "خطط الاشتراك", icon: CreditCard, fullOnly: true, external: true },
       { href: `${DASM_BASE}/admin/regions`, label: "المناطق", icon: Settings, fullOnly: true, external: true },
-      { href: `${DASM_BASE}/admin/settings`, label: "الإعدادات", icon: Settings, fullOnly: true, external: true },
     ],
   },
 ];
