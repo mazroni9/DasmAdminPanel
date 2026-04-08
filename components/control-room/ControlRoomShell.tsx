@@ -120,11 +120,6 @@ const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
     items: [
       { href: "/admin/control-room/growth-partners", label: "شركاء النمو", icon: Handshake, fullOnly: true },
       { href: "/admin/control-room/commission-tiers", label: "شرائح العمولات", icon: DollarSign },
-      { href: `${DASM_BASE}/admin/settlements`, label: "التسويات المالية", icon: ArrowDownUp, fullOnly: true, external: true },
-      { href: `${DASM_BASE}/admin/accounting`, label: "لوحة المحاسبة", icon: Calculator, fullOnly: true, external: true },
-      { href: `${DASM_BASE}/admin/angel-investments`, label: "الاستثمار الملائكي", icon: BarChart3, fullOnly: true, external: true },
-      { href: `${DASM_BASE}/admin/sales`, label: "إدارة المبيعات", icon: DollarSign, fullOnly: true, external: true },
-      { href: `${DASM_BASE}/admin/sales/revenue`, label: "عائد المنصة", icon: TrendingUp, fullOnly: true, external: true },
     ],
   },
   // ─── متاجر داسم ───
@@ -142,9 +137,6 @@ const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
       { href: `${DASM_BASE}/admin/blog/posts`, label: "المقالات", icon: FileText, fullOnly: true, external: true },
       { href: `${DASM_BASE}/admin/blog/categories`, label: "تصنيفات المدونة", icon: Tags, fullOnly: true, external: true },
       { href: `${DASM_BASE}/admin/market-council/permissions`, label: "صلاحيات مجلس السوق", icon: Shield, fullOnly: true, external: true },
-      { href: `${DASM_BASE}/admin/market-council/articles`, label: "مقالات مجلس السوق", icon: FileText, fullOnly: true, external: true },
-      { href: `${DASM_BASE}/admin/market-council/categories`, label: "تصنيفات المجلس", icon: Tags, fullOnly: true, external: true },
-      { href: `${DASM_BASE}/admin/market-council/comments`, label: "تعليقات المجلس", icon: MessageSquare, fullOnly: true, external: true },
       { href: `${DASM_BASE}/admin/newsletter-subscribers`, label: "النشرة البريدية", icon: Mail, fullOnly: true, external: true },
     ],
   },
