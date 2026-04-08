@@ -145,3 +145,5 @@ export default function ControlRoomGate({ children }: ControlRoomGateProps) {
 
   return <>{children(access)}</>;
 }
+
+export { ControlRoomGate };

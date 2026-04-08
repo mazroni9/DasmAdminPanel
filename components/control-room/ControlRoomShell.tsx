@@ -26,6 +26,24 @@ import {
   BarChart2,
   Youtube,
   DollarSign,
+  Building,
+  ShieldAlert,
+  Code2,
+  Clock,
+  Calendar,
+  ScrollText,
+  HeartPulse,
+  TestTube,
+  Key,
+  CreditCard,
+  TrendingUp,
+  Calculator,
+  ArrowDownUp,
+  BarChart3,
+  Tags,
+  MessageSquare,
+  Mail,
+  ExternalLink,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import type { ControlRoomAccessLevel } from "./ControlRoomGate";
@@ -36,9 +54,13 @@ interface NavItem {
   icon: React.ElementType;
   badge?: string;
   fullOnly?: boolean; // يظهر فقط لـ full access
+  external?: boolean; // يفتح في داسم الأم
 }
 
+const DASM_BASE = "https://www.dasm.com.sa";
+
 const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
+  // ─── القيادة المركزية ───
   {
     title: "القيادة المركزية",
     items: [
@@ -47,64 +69,105 @@ const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
       { href: "/admin/control-room/monitoring", label: "المراقبة الحية", icon: Radio },
     ],
   },
+  // ─── العمليات ───
   {
     title: "العمليات",
     items: [
       { href: "/admin/control-room/approval-requests", label: "طابور الموافقات", icon: ClipboardList },
       { href: "/admin/control-room/activities", label: "سجل الأنشطة", icon: Activity },
       { href: "/admin/control-room/moderation", label: "الاعتدال", icon: Shield, fullOnly: true },
-    ],
-  },
-  {
-    title: "متاجر داسم",
-    items: [
-      { href: "/admin/control-room/stores",    label: "مراقبة المتاجر",   icon: ShoppingBag },
-      { href: "/admin/control-room/ecommerce", label: "إحصائيات المتاجر", icon: ShoppingBag },
-    ],
-  },
-  {
-    title: "شركاء النمو",
-    items: [
-      { href: "/admin/control-room/growth-partners", label: "مراقبة الشركاء", icon: Handshake, fullOnly: true },
-      { href: "/admin/control-room/commission-tiers", label: "شرائح العمولات", icon: DollarSign },
-    ],
-  },
-  {
-    title: "التحليل الذكي",
-    items: [
       { href: "/admin/control-room/smart-alerts", label: "التنبيهات الذكية", icon: AlertTriangle },
-      { href: "/admin/control-room/reports", label: "التقارير", icon: FileText, fullOnly: true },
     ],
   },
+  // ─── المستخدمون والصلاحيات ───
   {
-    title: "المستخدمون",
+    title: "المستخدمون والصلاحيات",
     items: [
-      { href: "/admin/control-room/users", label: "المستخدمون", icon: Users, fullOnly: true },
+      { href: "/admin/control-room/users", label: "إدارة المستخدمين", icon: Users, fullOnly: true },
+      { href: `${DASM_BASE}/admin/users/status`, label: "حالة المستخدمين", icon: Activity, fullOnly: true, external: true },
+      { href: `${DASM_BASE}/admin/venue-owners`, label: "ملاك المعارض", icon: Building, fullOnly: true, external: true },
+      { href: `${DASM_BASE}/admin/staff`, label: "إدارة الطاقم", icon: Shield, fullOnly: true, external: true },
+      { href: `${DASM_BASE}/admin/roles`, label: "إدارة الأدوار", icon: UserCog, fullOnly: true, external: true },
+      { href: `${DASM_BASE}/admin/permissions`, label: "شجرة الصلاحيات", icon: Shield, fullOnly: true, external: true },
+      { href: `${DASM_BASE}/admin/organizations`, label: "المنظمات", icon: Building, fullOnly: true, external: true },
     ],
   },
+  // ─── السيارات والمزادات ───
   {
     title: "السيارات والمزادات",
     items: [
-      { href: "/cars", label: "السيارات", icon: Car, fullOnly: true },
-      { href: "/car-management", label: "إدارة السيارات", icon: Car, fullOnly: true },
-      { href: "/auctions", label: "المزادات", icon: Gavel, fullOnly: true },
+      { href: `${DASM_BASE}/admin/cars`, label: "السيارات", icon: Car, fullOnly: true, external: true },
+      { href: `${DASM_BASE}/admin/auctions`, label: "المزادات", icon: Gavel, fullOnly: true, external: true },
+      { href: `${DASM_BASE}/admin/pending-approvals`, label: "القوائم المعلقة", icon: Clock, fullOnly: true, external: true },
     ],
   },
+  // ─── الجلسات والبث ───
   {
-    title: "البث المباشر",
+    title: "الجلسات والبث",
     items: [
-      { href: "/live-stream", label: "إدارة البث", icon: Tv2, fullOnly: true },
-      { href: "/youtube-channels", label: "قنوات يوتيوب", icon: Youtube, fullOnly: true },
-      { href: "/buyer-notifications", label: "إشعارات المشترين", icon: Bell, fullOnly: true },
+      { href: `${DASM_BASE}/admin/sessions`, label: "إدارة الجلسات", icon: Calendar, fullOnly: true, external: true },
+      { href: `${DASM_BASE}/admin/live-stream`, label: "إدارة البث", icon: Tv2, fullOnly: true, external: true },
+      { href: `${DASM_BASE}/admin/youtube-channels`, label: "قنوات YouTube", icon: Youtube, fullOnly: true, external: true },
+      { href: `${DASM_BASE}/admin/live-market-staging`, label: "تغذية الحراج المباشر", icon: Radio, fullOnly: true, external: true },
     ],
   },
+  // ─── المحاسبة والمالية ───
   {
-    title: "الإدارة",
+    title: "المحاسبة والمالية",
     items: [
-      { href: "/employees", label: "الموظفون", icon: UserCog, fullOnly: true },
-      { href: "/users", label: "المستخدمون", icon: Users, fullOnly: true },
-      { href: "/reports", label: "التقارير", icon: BarChart2, fullOnly: true },
-      { href: "/settings", label: "الإعدادات", icon: Settings, fullOnly: true },
+      { href: "/admin/control-room/growth-partners", label: "شركاء النمو", icon: Handshake, fullOnly: true },
+      { href: "/admin/control-room/commission-tiers", label: "شرائح العمولات", icon: DollarSign },
+      { href: `${DASM_BASE}/admin/settlements`, label: "التسويات المالية", icon: ArrowDownUp, fullOnly: true, external: true },
+      { href: `${DASM_BASE}/admin/accounting`, label: "لوحة المحاسبة", icon: Calculator, fullOnly: true, external: true },
+      { href: `${DASM_BASE}/admin/angel-investments`, label: "الاستثمار الملائكي", icon: BarChart3, fullOnly: true, external: true },
+      { href: `${DASM_BASE}/admin/sales`, label: "إدارة المبيعات", icon: DollarSign, fullOnly: true, external: true },
+      { href: `${DASM_BASE}/admin/sales/revenue`, label: "عائد المنصة", icon: TrendingUp, fullOnly: true, external: true },
+    ],
+  },
+  // ─── متاجر داسم ───
+  {
+    title: "متاجر داسم",
+    items: [
+      { href: "/admin/control-room/stores", label: "مراقبة المتاجر", icon: ShoppingBag },
+      { href: "/admin/control-room/ecommerce", label: "إحصائيات المتاجر", icon: ShoppingBag },
+    ],
+  },
+  // ─── المدونة ومجلس السوق ───
+  {
+    title: "المحتوى والمجلس",
+    items: [
+      { href: `${DASM_BASE}/admin/blog/posts`, label: "المقالات", icon: FileText, fullOnly: true, external: true },
+      { href: `${DASM_BASE}/admin/blog/categories`, label: "تصنيفات المدونة", icon: Tags, fullOnly: true, external: true },
+      { href: `${DASM_BASE}/admin/market-council/articles`, label: "مقالات مجلس السوق", icon: FileText, fullOnly: true, external: true },
+      { href: `${DASM_BASE}/admin/market-council/categories`, label: "تصنيفات المجلس", icon: Tags, fullOnly: true, external: true },
+      { href: `${DASM_BASE}/admin/market-council/comments`, label: "تعليقات المجلس", icon: MessageSquare, fullOnly: true, external: true },
+      { href: `${DASM_BASE}/admin/newsletter-subscribers`, label: "النشرة البريدية", icon: Mail, fullOnly: true, external: true },
+    ],
+  },
+  // ─── السجلات والمراقبة ───
+  {
+    title: "السجلات والمراقبة",
+    items: [
+      { href: `${DASM_BASE}/admin/bids-logs`, label: "سجلات المزايدات", icon: ScrollText, fullOnly: true, external: true },
+      { href: `${DASM_BASE}/admin/activity-logs`, label: "سجلات النشاط", icon: FileText, fullOnly: true, external: true },
+      { href: `${DASM_BASE}/admin/auction-activity-log`, label: "سجل المزادات الفوري", icon: ScrollText, fullOnly: true, external: true },
+      { href: `${DASM_BASE}/admin/monitoring`, label: "مراقبة الإنتاج", icon: HeartPulse, fullOnly: true, external: true },
+      { href: `${DASM_BASE}/admin/auction-tests`, label: "اختبارات المزادات", icon: TestTube, fullOnly: true, external: true },
+      { href: `${DASM_BASE}/admin/auction-testing-analytics`, label: "تحليلات الاختبارات", icon: BarChart3, fullOnly: true, external: true },
+    ],
+  },
+  // ─── التقارير والإعدادات ───
+  {
+    title: "التقارير والإعدادات",
+    items: [
+      { href: "/admin/control-room/reports", label: "التقارير", icon: BarChart2, fullOnly: true },
+      { href: `${DASM_BASE}/similar-price-analysis`, label: "تحليل الأسعار المشابهة", icon: BarChart3, fullOnly: true, external: true },
+      { href: `${DASM_BASE}/admin/security`, label: "مركز الأمان", icon: ShieldAlert, fullOnly: true, external: true },
+      { href: `${DASM_BASE}/admin/developers`, label: "بوابة المبرمجين", icon: Code2, fullOnly: true, external: true },
+      { href: `${DASM_BASE}/admin/api-keys`, label: "مفاتيح API", icon: Key, fullOnly: true, external: true },
+      { href: `${DASM_BASE}/admin/subscription-plans`, label: "خطط الاشتراك", icon: CreditCard, fullOnly: true, external: true },
+      { href: `${DASM_BASE}/admin/regions`, label: "المناطق", icon: Settings, fullOnly: true, external: true },
+      { href: `${DASM_BASE}/admin/settings`, label: "الإعدادات", icon: Settings, fullOnly: true, external: true },
     ],
   },
 ];
@@ -183,22 +246,41 @@ export default function ControlRoomShell({ children, access }: Props) {
               <ul className="space-y-0.5">
                 {visibleItems.map((item) => {
                   const Icon = item.icon;
-                  const active = isActive(item.href);
+                  const active = !item.external && isActive(item.href);
+                  const linkClass = `flex items-center gap-2.5 px-3 py-1.5 rounded-xl text-sm transition ${
+                    active
+                      ? "bg-blue-50 text-blue-700 font-medium"
+                      : "text-gray-700 hover:bg-gray-100"
+                  }`;
+
+                  if (item.external) {
+                    return (
+                      <li key={item.href}>
+                        <a
+                          href={item.href}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={linkClass}
+                        >
+                          <Icon className="w-4 h-4 shrink-0 text-gray-400" />
+                          <span className="flex-1 truncate">{item.label}</span>
+                          <ExternalLink className="w-3 h-3 shrink-0 text-gray-300" />
+                        </a>
+                      </li>
+                    );
+                  }
+
                   return (
                     <li key={item.href}>
                       <Link
                         href={item.href}
                         onClick={() => setSidebarOpen(false)}
-                        className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm transition ${
-                          active
-                            ? "bg-blue-50 text-blue-700 font-medium"
-                            : "text-gray-700 hover:bg-gray-100"
-                        }`}
+                        className={linkClass}
                       >
                         <Icon className={`w-4 h-4 shrink-0 ${active ? "text-blue-600" : "text-gray-400"}`} />
-                        {item.label}
+                        <span className="flex-1 truncate">{item.label}</span>
                         {item.badge && (
-                          <span className="mr-auto text-xs bg-red-500 text-white px-1.5 py-0.5 rounded-full">
+                          <span className="text-xs bg-red-500 text-white px-1.5 py-0.5 rounded-full">
                             {item.badge}
                           </span>
                         )}
@@ -280,3 +362,5 @@ export default function ControlRoomShell({ children, access }: Props) {
     </div>
   );
 }
+
+export { ControlRoomShell };

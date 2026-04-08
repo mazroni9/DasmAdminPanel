@@ -4,7 +4,7 @@ import Head from "next/head";
 import { ControlRoomShell } from "@/components/control-room/ControlRoomShell";
 import { ControlRoomGate } from "@/components/control-room/ControlRoomGate";
 import { PLATFORMS, INTERNAL_LINKS, type Platform } from "@/lib/platforms";
-import dasmBff from "@/lib/dasmBff";
+import dasmBff from "@/lib/dasmBffClient";
 
 /* ─────────── Types ─────────── */
 
@@ -114,7 +114,8 @@ export default function CommandCenterPage() {
 
   return (
     <ControlRoomGate>
-      <ControlRoomShell>
+      {(access) => (
+      <ControlRoomShell access={access}>
         <Head>
           <title>مركز القيادة — الكنترول روم</title>
         </Head>
@@ -305,6 +306,7 @@ export default function CommandCenterPage() {
           </div>
         </div>
       </ControlRoomShell>
+      )}
     </ControlRoomGate>
   );
 }
