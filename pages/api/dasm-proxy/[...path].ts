@@ -76,6 +76,10 @@ function isPathAllowed(subPath: string, method: string): boolean {
   // SSO verify (لتبادل التوكن)
   if (subPath === "sso/verify") return method === "POST";
 
+  // Session 29 — Stream chat + config + video sources
+  if (subPath.startsWith("streams/")) return method === "GET"; // public read
+  if (subPath.startsWith("moderator/streams/")) return true;   // moderator write
+
   return false;
 }
 
