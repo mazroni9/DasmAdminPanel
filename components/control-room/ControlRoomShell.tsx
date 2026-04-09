@@ -102,6 +102,7 @@ const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
   {
     title: "الجلسات والبث",
     items: [
+      { href: "/admin/control-room/stream-management", label: "إدارة شات البث", icon: MessageSquare },
       { href: `${DASM_BASE}/admin/sessions`, label: "إدارة الجلسات", icon: Calendar, fullOnly: true, external: true },
       { href: `${DASM_BASE}/admin/live-stream`, label: "إدارة البث", icon: Tv2, fullOnly: true, external: true },
       { href: `${DASM_BASE}/admin/youtube-channels`, label: "قنوات YouTube", icon: Youtube, fullOnly: true, external: true },
