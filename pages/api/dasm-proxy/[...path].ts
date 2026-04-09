@@ -80,6 +80,10 @@ function isPathAllowed(subPath: string, method: string): boolean {
   if (subPath.startsWith("streams/")) return method === "GET"; // public read
   if (subPath.startsWith("moderator/streams/")) return true;   // moderator write
 
+  // Session 30 — Broadcast listing (for stream management index)
+  if (subPath.startsWith("admin/all-broadcasts")) return method === "GET";
+  if (subPath === "admin/broadcast") return method === "GET";
+
   return false;
 }
 
