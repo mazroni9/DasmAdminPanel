@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import Head from "next/head";
-import { ControlRoomShell } from "@/components/control-room/ControlRoomShell";
+import ControlRoomShell from "@/components/control-room/ControlRoomShell";
 import { ControlRoomGate } from "@/components/control-room/ControlRoomGate";
 import { PLATFORMS, INTERNAL_LINKS, type Platform } from "@/lib/platforms";
 import dasmBff from "@/lib/dasmBffClient";
