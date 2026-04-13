@@ -10,6 +10,7 @@
  */
 
 import Layout from '../components/Layout';
+import GrowthPartnerContract from '../components/GrowthPartnerContract';
 import { apiFetch } from '../utils/api';
 import { useRouter } from 'next/router';
 import { useEffect, useState, useMemo, useRef } from 'react';
@@ -137,6 +138,10 @@ export default function GrowthPartnersPage() {
   const [reportPartner, setReportPartner] = useState<GrowthPartner | null>(null);
   const [report, setReport]             = useState<any>(null);
   const [reportLoading, setReportLoading] = useState(false);
+
+  // ── modal عرض العقد ──
+  const [showContract, setShowContract]         = useState(false);
+  const [contractPartner, setContractPartner]   = useState<GrowthPartner | null>(null);
 
   // ── جلب البيانات ──────────────────────────────────────────────────────
 
@@ -448,6 +453,12 @@ export default function GrowthPartnersPage() {
                           className="px-2 py-1 text-xs bg-indigo-50 text-indigo-700 rounded hover:bg-indigo-100 transition-colors"
                         >
                           تعديل
+                        </button>
+                        <button
+                          onClick={() => { setContractPartner(p); setShowContract(true); }}
+                          className="px-2 py-1 text-xs bg-purple-50 text-purple-700 rounded hover:bg-purple-100 transition-colors"
+                        >
+                          العقد
                         </button>
                         <button
                           onClick={() => openReport(p)}
@@ -923,6 +934,75 @@ export default function GrowthPartnersPage() {
               ) : (
                 <p className="text-center text-gray-400 py-8">تعذّر تحميل التقرير</p>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════════════
+          Modal: عرض العقد (للقراءة فقط — نفس ما يراه الشريك قبل التوقيع)
+      ═══════════════════════════════════════════════════════════════════ */}
+      {showContract && contractPartner && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" dir="rtl">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl flex flex-col max-h-[92vh]">
+            {/* رأس المودال */}
+            <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between rounded-t-2xl shrink-0">
+              <div>
+                <h2 className="text-lg font-bold text-gray-900">عقد شراكة النمو</h2>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  معاينة العقد الذي وقّعه / سيوقّعه:{' '}
+                  <span className="font-semibold text-gray-700">{contractPartner.name}</span>
+                  {contractPartner.referral_code && (
+                    <span className="font-mono mr-2 text-indigo-600">[{contractPartner.referral_code}]</span>
+                  )}
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                {contractPartner.legal_undertaking_accepted_at ? (
+                  <span className="px-3 py-1 text-xs bg-green-50 text-green-700 rounded-full font-medium border border-green-200">
+                    ✓ موقّع في {new Date(contractPartner.legal_undertaking_accepted_at).toLocaleDateString('ar-SA')}
+                  </span>
+                ) : (
+                  <span className="px-3 py-1 text-xs bg-amber-50 text-amber-700 rounded-full font-medium border border-amber-200">
+                    لم يوقّع بعد
+                  </span>
+                )}
+                <button
+                  onClick={() => setShowContract(false)}
+                  className="text-gray-400 hover:text-gray-600 text-2xl leading-none"
+                >
+                  ×
+                </button>
+              </div>
+            </div>
+
+            {/* نص العقد */}
+            <div className="overflow-y-auto flex-1 px-6 sm:px-8 py-6">
+              <GrowthPartnerContract
+                partnerName={contractPartner.contact_name ?? contractPartner.name}
+                commissionPercent={contractPartner.commission_percentage}
+                referralCode={contractPartner.referral_code}
+                contractDate={
+                  contractPartner.legal_undertaking_accepted_at
+                    ? new Date(contractPartner.legal_undertaking_accepted_at).toLocaleDateString('ar-SA', {
+                        year: 'numeric', month: 'long', day: 'numeric',
+                      })
+                    : undefined
+                }
+              />
+            </div>
+
+            {/* الذيل */}
+            <div className="border-t border-gray-100 px-6 py-4 flex items-center justify-between shrink-0 bg-gray-50 rounded-b-2xl">
+              <p className="text-xs text-gray-400">
+                هذه معاينة للعقد — القبول يتم من بوابة الشريك فقط
+              </p>
+              <button
+                onClick={() => setShowContract(false)}
+                className="px-4 py-2 text-sm bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition"
+              >
+                إغلاق
+              </button>
             </div>
           </div>
         </div>
