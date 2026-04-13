@@ -18,6 +18,7 @@ import {
   BellIcon,
   Bars3Icon,
   ChevronLeftIcon,
+  SparklesIcon,
 } from '@heroicons/react/24/outline';
 
 import { clearSession, getSession, getUser, getUserDisplayName, isExpired } from '../utils/authStorage';
@@ -43,6 +44,7 @@ export default function Layout({ title, children }: any) {
       { name: 'إدارة البث', href: '/live-stream', icon: VideoCameraIcon },
       { name: 'المزادات', href: '/auctions', icon: CurrencyDollarIcon },
       { name: 'قنوات YouTube', href: '/youtube-channels', icon: VideoCameraIcon },
+      { name: 'شركاء النمو (Mr.20%)', href: '/growth-partners', icon: SparklesIcon },
       { name: 'التقارير', href: '/reports', icon: ChartBarIcon },
       { name: 'الإعدادات', href: '/settings', icon: Cog6ToothIcon },
     ],
