@@ -1,5 +1,6 @@
 import { useEffect, type ReactNode } from "react";
 import type { AppProps } from "next/app";
+import Script from "next/script";
 import { Toaster } from "react-hot-toast";
 import { usePlatformAuthStore } from "@/store/platformAuthStore";
 import platformApi from "@/lib/platformApi";
@@ -38,6 +39,8 @@ export default function App({ Component, pageProps }: AppProps) {
     <PlatformAuthHydration>
       <Component {...pageProps} />
       <Toaster position="top-center" />
+      {/* DASM Talk widget — unified conversations layer (talk.dasm.com.sa) */}
+      <Script src="https://talk.dasm.com.sa/widget.js" strategy="afterInteractive" />
     </PlatformAuthHydration>
   );
 }
